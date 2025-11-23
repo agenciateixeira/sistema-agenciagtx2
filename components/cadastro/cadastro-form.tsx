@@ -53,7 +53,11 @@ export function CadastroForm() {
 
       setStatus('success');
       setMessage('Conta criada com sucesso! Redirecionando...');
-      router.push('/dashboard');
+
+      // Force redirect after small delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
     } catch (error) {
       setStatus('error');
       setMessage('Erro ao criar conta. Tente novamente.');

@@ -34,7 +34,11 @@ export function LoginForm() {
 
       setStatus('success');
       setMessage('Login realizado com sucesso, redirecionando...');
-      router.push('/dashboard');
+
+      // Force redirect after small delay
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
     } catch (error) {
       setStatus('error');
       setMessage('Erro ao fazer login. Tente novamente.');
