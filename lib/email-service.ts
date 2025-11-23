@@ -1,5 +1,12 @@
 import { resend, FROM_EMAIL } from './resend';
 import { teamInviteTemplate, notificationEmailTemplate, reportEmailTemplate } from './email-templates';
+import { createClient } from '@supabase/supabase-js';
+
+// Cliente Supabase para salvar logs de email
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function sendTeamInviteEmail(params: {
   to: string;
@@ -11,10 +18,12 @@ export async function sendTeamInviteEmail(params: {
     // URL de convite (em produção seria uma URL com token único)
     const inviteUrl = `https://app.agenciagtx.com.br/cadastro?email=${encodeURIComponent(params.to)}&role=${params.role}`;
 
+    const subject = `Você foi convidado para o GTX Sistema`;
+
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: params.to,
-      subject: `Você foi convidado para o GTX Sistema`,
+      subject,
       html: teamInviteTemplate({
         inviteeName: params.inviteeName,
         inviterName: params.inviterName,
@@ -26,6 +35,22 @@ export async function sendTeamInviteEmail(params: {
     if (error) {
       console.error('Erro ao enviar email de convite:', error);
       return { success: false, error: error.message };
+    }
+
+    // Salvar log do email enviado
+    if (data?.id) {
+      await supabase.from('EmailLog').insert({
+        emailId: data.id,
+        type: 'TEAM_INVITE',
+        to: params.to,
+        subject,
+        status: 'SENT',
+        metadata: {
+          inviteeName: params.inviteeName,
+          inviterName: params.inviterName,
+          role: params.role,
+        },
+      });
     }
 
     console.log('Email de convite enviado:', data);
@@ -44,10 +69,12 @@ export async function sendNotificationEmail(params: {
   severity: string;
 }) {
   try {
+    const subject = `[${params.severity}] ${params.title}`;
+
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: params.to,
-      subject: `[${params.severity}] ${params.title}`,
+      subject,
       html: notificationEmailTemplate({
         userName: params.userName,
         title: params.title,
@@ -59,6 +86,22 @@ export async function sendNotificationEmail(params: {
     if (error) {
       console.error('Erro ao enviar email de notificação:', error);
       return { success: false, error: error.message };
+    }
+
+    // Salvar log do email enviado
+    if (data?.id) {
+      await supabase.from('EmailLog').insert({
+        emailId: data.id,
+        type: 'NOTIFICATION',
+        to: params.to,
+        subject,
+        status: 'SENT',
+        metadata: {
+          userName: params.userName,
+          title: params.title,
+          severity: params.severity,
+        },
+      });
     }
 
     console.log('Email de notificação enviado:', data);
@@ -77,10 +120,12 @@ export async function sendReportEmail(params: {
   summary: string;
 }) {
   try {
+    const subject = `📊 Relatório: ${params.reportName}`;
+
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: params.to,
-      subject: `📊 Relatório: ${params.reportName}`,
+      subject,
       html: reportEmailTemplate({
         userName: params.userName,
         reportName: params.reportName,
@@ -92,6 +137,22 @@ export async function sendReportEmail(params: {
     if (error) {
       console.error('Erro ao enviar email de relatório:', error);
       return { success: false, error: error.message };
+    }
+
+    // Salvar log do email enviado
+    if (data?.id) {
+      await supabase.from('EmailLog').insert({
+        emailId: data.id,
+        type: 'REPORT',
+        to: params.to,
+        subject,
+        status: 'SENT',
+        metadata: {
+          userName: params.userName,
+          reportName: params.reportName,
+          cadence: params.cadence,
+        },
+      });
     }
 
     console.log('Email de relatório enviado:', data);
