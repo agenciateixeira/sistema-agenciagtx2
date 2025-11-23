@@ -1,4 +1,4 @@
-Force rebuild - 2025-01-23 21:00:00
+Force rebuild - 2025-01-23 22:00:00
 This file forces Vercel to do a complete rebuild.
 Changes:
 - Fixed middleware to allow /recuperar-senha routes
@@ -7,3 +7,6 @@ Changes:
 - CRITICAL FIX: Added password update workaround in accept-invite route
 - Supabase admin.createUser() bug: password not saving correctly
 - Solution: Call admin.updateUserById() immediately after createUser()
+- NEW: Created /convite-aceito page to show credentials clearly
+- NEW: Accept-invite now redirects to /convite-aceito with auto-login
+- Added /convite-aceito to public routes in middleware

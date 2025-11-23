@@ -68,6 +68,7 @@ export async function middleware(request: NextRequest) {
     '/cadastro',
     '/recuperar-senha',
     '/recuperar-senha/redefinir',
+    '/convite-aceito',
     '/debug',
   ];
 

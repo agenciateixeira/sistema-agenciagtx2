@@ -153,10 +153,10 @@ export async function GET(req: NextRequest) {
       // Não falhar se o email não enviar
     }
 
-    // Redirecionar para login com mensagem de sucesso
+    // Redirecionar para página de convite aceito com credenciais
     return NextResponse.redirect(
       new URL(
-        `/login?success=account_created&email=${encodeURIComponent(invite.email)}&password=${encodeURIComponent(defaultPassword)}`,
+        `/convite-aceito?email=${encodeURIComponent(invite.email)}&password=${encodeURIComponent(defaultPassword)}`,
         req.url
       )
     );
