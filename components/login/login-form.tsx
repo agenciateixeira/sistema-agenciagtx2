@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { login } from '../../app/actions/auth';
+import { useRouter } from 'next/navigation';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const router = useRouter();
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -14,14 +16,25 @@ export function LoginForm() {
     setMessage('');
 
     const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
 
     try {
-      const result = await login(formData);
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-      if (result?.error) {
+      if (error) {
         setStatus('error');
-        setMessage(result.error);
+        setMessage(error.message || 'Não foi possível entrar.');
+        return;
       }
+
+      setStatus('success');
+      setMessage('Login realizado com sucesso, redirecionando...');
+      router.push('/dashboard');
     } catch (error) {
       setStatus('error');
       setMessage('Erro ao fazer login. Tente novamente.');

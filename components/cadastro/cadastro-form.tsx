@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { signup } from '../../app/actions/auth';
+import { useRouter } from 'next/navigation';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { Loader2 } from 'lucide-react';
 
 export function CadastroForm() {
-  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
+  const router = useRouter();
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -14,8 +16,10 @@ export function CadastroForm() {
     setMessage('');
 
     const formData = new FormData(event.currentTarget);
+    const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     const confirmPassword = formData.get('confirmPassword') as string;
+    const name = formData.get('name') as string;
 
     if (password !== confirmPassword) {
       setStatus('error');
@@ -30,12 +34,26 @@ export function CadastroForm() {
     }
 
     try {
-      const result = await signup(formData);
+      const supabase = getSupabaseBrowserClient();
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
+      });
 
-      if (result?.error) {
+      if (error) {
         setStatus('error');
-        setMessage(result.error);
+        setMessage(error.message || 'Não foi possível criar a conta.');
+        return;
       }
+
+      setStatus('success');
+      setMessage('Conta criada com sucesso! Redirecionando...');
+      router.push('/dashboard');
     } catch (error) {
       setStatus('error');
       setMessage('Erro ao criar conta. Tente novamente.');

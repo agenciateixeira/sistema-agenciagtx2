@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { appNavigation } from '@/lib/navigation';
 import { Bell, Search, User, LogOut, Menu, X } from 'lucide-react';
-import { logout } from '../../app/actions/auth';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -13,11 +13,14 @@ interface TopbarProps {
 
 export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const current = appNavigation.find((item) => item.href === pathname)?.name || 'Dashboard';
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   async function handleLogout() {
-    await logout();
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push('/login');
   }
 
   return (
