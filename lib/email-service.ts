@@ -2,11 +2,18 @@ import { resend, FROM_EMAIL } from './resend';
 import { teamInviteTemplate, notificationEmailTemplate, reportEmailTemplate } from './email-templates';
 import { createClient } from '@supabase/supabase-js';
 
-// Cliente Supabase para salvar logs de email
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Função para criar cliente Supabase (evita erro de build)
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    // Retornar null se não configurado (desenvolvimento local)
+    return null;
+  }
+
+  return createClient(url, key);
+}
 
 export async function sendTeamInviteEmail(params: {
   to: string;
@@ -39,18 +46,21 @@ export async function sendTeamInviteEmail(params: {
 
     // Salvar log do email enviado
     if (data?.id) {
-      await supabase.from('EmailLog').insert({
-        emailId: data.id,
-        type: 'TEAM_INVITE',
-        to: params.to,
-        subject,
-        status: 'SENT',
-        metadata: {
-          inviteeName: params.inviteeName,
-          inviterName: params.inviterName,
-          role: params.role,
-        },
-      });
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.from('EmailLog').insert({
+          emailId: data.id,
+          type: 'TEAM_INVITE',
+          to: params.to,
+          subject,
+          status: 'SENT',
+          metadata: {
+            inviteeName: params.inviteeName,
+            inviterName: params.inviterName,
+            role: params.role,
+          },
+        });
+      }
     }
 
     console.log('Email de convite enviado:', data);
@@ -90,18 +100,21 @@ export async function sendNotificationEmail(params: {
 
     // Salvar log do email enviado
     if (data?.id) {
-      await supabase.from('EmailLog').insert({
-        emailId: data.id,
-        type: 'NOTIFICATION',
-        to: params.to,
-        subject,
-        status: 'SENT',
-        metadata: {
-          userName: params.userName,
-          title: params.title,
-          severity: params.severity,
-        },
-      });
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.from('EmailLog').insert({
+          emailId: data.id,
+          type: 'NOTIFICATION',
+          to: params.to,
+          subject,
+          status: 'SENT',
+          metadata: {
+            userName: params.userName,
+            title: params.title,
+            severity: params.severity,
+          },
+        });
+      }
     }
 
     console.log('Email de notificação enviado:', data);
@@ -141,18 +154,21 @@ export async function sendReportEmail(params: {
 
     // Salvar log do email enviado
     if (data?.id) {
-      await supabase.from('EmailLog').insert({
-        emailId: data.id,
-        type: 'REPORT',
-        to: params.to,
-        subject,
-        status: 'SENT',
-        metadata: {
-          userName: params.userName,
-          reportName: params.reportName,
-          cadence: params.cadence,
-        },
-      });
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.from('EmailLog').insert({
+          emailId: data.id,
+          type: 'REPORT',
+          to: params.to,
+          subject,
+          status: 'SENT',
+          metadata: {
+            userName: params.userName,
+            reportName: params.reportName,
+            cadence: params.cadence,
+          },
+        });
+      }
     }
 
     console.log('Email de relatório enviado:', data);

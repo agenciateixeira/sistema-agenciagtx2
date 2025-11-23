@@ -2,11 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-// Cliente Supabase com service role para escrever no banco
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Função para criar cliente Supabase (evita erro de build)
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    throw new Error('Supabase environment variables not configured');
+  }
+
+  return createClient(url, key);
+}
 
 // Verificação de assinatura do webhook Resend (usam Svix)
 function verifySignature(payload: string, signature: string, secret: string): boolean {
@@ -85,6 +91,8 @@ async function handleEmailSent(data: any) {
 
   console.log(`✅ Email sent: ${email_id} to ${to}`);
 
+  const supabase = getSupabaseClient();
+
   // Criar registro no banco
   const { error } = await supabase.from('EmailLog').insert({
     emailId: email_id,
@@ -107,6 +115,8 @@ async function handleEmailDelivered(data: any) {
   const { email_id } = data;
 
   console.log(`📬 Email delivered: ${email_id}`);
+
+  const supabase = getSupabaseClient();
 
   // Buscar registro existente
   const { data: existing } = await supabase
@@ -140,6 +150,8 @@ async function handleEmailOpened(data: any) {
   const { email_id } = data;
 
   console.log(`👀 Email opened: ${email_id}`);
+
+  const supabase = getSupabaseClient();
 
   const { data: existing } = await supabase
     .from('EmailLog')
@@ -175,6 +187,8 @@ async function handleEmailClicked(data: any) {
 
   console.log(`🖱️ Email link clicked: ${email_id}`);
 
+  const supabase = getSupabaseClient();
+
   const { data: existing } = await supabase
     .from('EmailLog')
     .select('events')
@@ -206,6 +220,8 @@ async function handleEmailBounced(data: any) {
 
   console.log(`❌ Email bounced: ${email_id}`);
 
+  const supabase = getSupabaseClient();
+
   const { data: existing } = await supabase
     .from('EmailLog')
     .select('events')
@@ -236,6 +252,8 @@ async function handleEmailComplained(data: any) {
   const { email_id } = data;
 
   console.log(`🚫 Email complained (spam): ${email_id}`);
+
+  const supabase = getSupabaseClient();
 
   const { data: existing } = await supabase
     .from('EmailLog')
