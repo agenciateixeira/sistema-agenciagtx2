@@ -1,50 +1,31 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { useState } from 'react';
+import { login } from '../../app/actions/auth';
 import { Loader2 } from 'lucide-react';
 
 export function LoginForm() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [supabase, setSupabase] = useState<ReturnType<typeof getSupabaseBrowserClient> | null>(null);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      setSupabase(getSupabaseBrowserClient());
-    } catch (error) {
-      console.error(error);
-      setMessage('Configure as variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY para habilitar o login.');
-      setStatus('error');
-    }
-  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!supabase) {
-      setStatus('error');
-      setMessage('Supabase não configurado. Verifique as variáveis de ambiente.');
-      return;
-    }
     setStatus('loading');
     setMessage('');
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const formData = new FormData(event.currentTarget);
 
-    if (error) {
+    try {
+      const result = await login(formData);
+
+      if (result?.error) {
+        setStatus('error');
+        setMessage(result.error);
+      }
+    } catch (error) {
       setStatus('error');
-      setMessage(error.message || 'Não foi possível entrar.');
-      return;
+      setMessage('Erro ao fazer login. Tente novamente.');
     }
-
-    setStatus('success');
-    setMessage('Login realizado com sucesso, redirecionando...');
-    setTimeout(() => router.push('/dashboard'), 500);
   }
 
   return (
@@ -56,8 +37,6 @@ export function LoginForm() {
         <input
           id="email"
           name="email"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
           type="email"
           required
           placeholder="seu@email.com"
@@ -77,8 +56,6 @@ export function LoginForm() {
         <input
           id="password"
           name="password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
           type="password"
           required
           placeholder="••••••••"
@@ -87,14 +64,14 @@ export function LoginForm() {
       </div>
 
       {message && (
-        <div className={`rounded-lg p-3 text-sm ${status === 'error' ? 'bg-red-50 text-red-800' : 'bg-brand-50 text-brand-800'}`}>
+        <div className="rounded-lg p-3 text-sm bg-red-50 text-red-800">
           {message}
         </div>
       )}
 
       <button
         type="submit"
-        disabled={status === 'loading' || !supabase}
+        disabled={status === 'loading'}
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
