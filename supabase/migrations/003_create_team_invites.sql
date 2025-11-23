@@ -34,11 +34,11 @@ CREATE TABLE IF NOT EXISTS "TeamInvite" (
 );
 
 -- Criar índices para performance
-CREATE INDEX idx_team_invite_email ON "TeamInvite"(email);
-CREATE INDEX idx_team_invite_status ON "TeamInvite"(status);
-CREATE INDEX idx_team_invite_invited_by ON "TeamInvite"("invitedBy");
-CREATE INDEX idx_team_invite_token ON "TeamInvite"(token);
-CREATE INDEX idx_team_invite_expires_at ON "TeamInvite"("expiresAt") WHERE "expiresAt" IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_team_invite_email ON "TeamInvite"(email);
+CREATE INDEX IF NOT EXISTS idx_team_invite_status ON "TeamInvite"(status);
+CREATE INDEX IF NOT EXISTS idx_team_invite_invited_by ON "TeamInvite"("invitedBy");
+CREATE INDEX IF NOT EXISTS idx_team_invite_token ON "TeamInvite"(token);
+CREATE INDEX IF NOT EXISTS idx_team_invite_expires_at ON "TeamInvite"("expiresAt") WHERE "expiresAt" IS NOT NULL;
 
 -- Criar trigger para updated_at
 CREATE TRIGGER update_team_invite_updated_at

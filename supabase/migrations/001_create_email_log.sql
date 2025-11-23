@@ -47,11 +47,11 @@ CREATE TABLE IF NOT EXISTS "EmailLog" (
 );
 
 -- Criar índices para performance
-CREATE INDEX idx_email_log_email_id ON "EmailLog"("emailId");
-CREATE INDEX idx_email_log_to ON "EmailLog"("to");
-CREATE INDEX idx_email_log_status ON "EmailLog"(status);
-CREATE INDEX idx_email_log_sent_at ON "EmailLog"("sentAt" DESC);
-CREATE INDEX idx_email_log_type ON "EmailLog"(type);
+CREATE INDEX IF NOT EXISTS idx_email_log_email_id ON "EmailLog"("emailId");
+CREATE INDEX IF NOT EXISTS idx_email_log_to ON "EmailLog"("to");
+CREATE INDEX IF NOT EXISTS idx_email_log_status ON "EmailLog"(status);
+CREATE INDEX IF NOT EXISTS idx_email_log_sent_at ON "EmailLog"("sentAt" DESC);
+CREATE INDEX IF NOT EXISTS idx_email_log_type ON "EmailLog"(type);
 
 -- Criar função para atualizar updated_at automaticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
