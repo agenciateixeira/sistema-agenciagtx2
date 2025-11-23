@@ -155,15 +155,16 @@ export async function sendWelcomeEmail(params: {
         <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden;">
           <tr>
             <td style="background-color: #22c55e; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700;">🎉</h1>
-              <h2 style="margin: 12px 0 0 0; color: #ffffff; font-size: 24px; font-weight: 700;">Bem-vindo ao Sistema GTX!</h2>
+              <img src="https://app.agenciagtx.com.br/favicon.png" alt="GTX Logo" style="width: 64px; height: 64px; margin: 0 auto 16px auto; display: block;" />
+              <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">Bem-vindo ao Sistema GTX!</h2>
+              <p style="margin: 10px 0 0 0; color: #dcfce7; font-size: 15px; font-weight: 500;">Gestão de Marketing e Analytics</p>
             </td>
           </tr>
 
           <tr>
             <td style="padding: 40px 30px;">
               <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 22px; font-weight: 600;">Olá, ${params.userName}!</h3>
-              <p style="margin: 0 0 24px 0; color: #6b7280; font-size: 16px;">Sua conta foi criada com sucesso.</p>
+              <p style="margin: 0 0 24px 0; color: #6b7280; font-size: 16px;">Sua conta foi criada com sucesso. Use as credenciais abaixo para fazer login.</p>
 
               <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 8px; padding: 24px; margin: 30px 0;">
                 <h4 style="margin: 0 0 16px 0; color: #15803d; font-size: 16px; font-weight: 600;">🔑 Suas Credenciais de Acesso</h4>
@@ -177,9 +178,20 @@ export async function sendWelcomeEmail(params: {
                 </div>
               </div>
 
+              <!-- Instruções de Acesso -->
+              <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin: 24px 0;">
+                <h4 style="margin: 0 0 16px 0; color: #1f2937; font-size: 15px; font-weight: 600;">📋 Instruções de Acesso</h4>
+                <ol style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.8;">
+                  <li style="margin-bottom: 8px;">Clique no botão "Acessar Sistema" abaixo</li>
+                  <li style="margin-bottom: 8px;">Digite seu email e a senha temporária acima</li>
+                  <li style="margin-bottom: 8px;">Após o login, vá em <strong>Perfil → Alterar Senha</strong></li>
+                  <li>Escolha uma nova senha segura e salve</li>
+                </ol>
+              </div>
+
               <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 16px; margin: 24px 0;">
                 <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-                  ⚠️ <strong>Importante:</strong> Por segurança, altere sua senha no primeiro acesso em <strong>Perfil → Alterar Senha</strong>.
+                  ⚠️ <strong>Importante:</strong> Por segurança, altere sua senha no primeiro acesso.
                 </p>
               </div>
 

@@ -26,8 +26,9 @@ export const teamInviteTemplate = (params: {
           <!-- Header GTX -->
           <tr>
             <td style="background-color: #22c55e; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Sistema GTX</h1>
-              <p style="margin: 10px 0 0 0; color: #dcfce7; font-size: 15px; font-weight: 500;">Gestão de Marketing e Analytics</p>
+              <img src="https://app.agenciagtx.com.br/favicon.png" alt="GTX Logo" style="width: 64px; height: 64px; margin: 0 auto 16px auto; display: block;" />
+              <p style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">Sistema GTX</p>
+              <p style="margin: 6px 0 0 0; color: #dcfce7; font-size: 14px; font-weight: 500;">Gestão de Marketing e Analytics</p>
             </td>
           </tr>
 
@@ -131,8 +132,9 @@ export const notificationEmailTemplate = (params: {
           <!-- Header GTX -->
           <tr>
             <td style="background-color: #22c55e; padding: 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">🔔 Sistema GTX</h1>
-              <p style="margin: 8px 0 0 0; color: #dcfce7; font-size: 14px;">Notificação do Sistema</p>
+              <img src="https://app.agenciagtx.com.br/favicon.png" alt="GTX Logo" style="width: 48px; height: 48px; margin: 0 auto 12px auto; display: block;" />
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🔔 Notificação</h1>
+              <p style="margin: 6px 0 0 0; color: #dcfce7; font-size: 13px;">Sistema GTX</p>
             </td>
           </tr>
 
@@ -216,8 +218,8 @@ export const reportEmailTemplate = (params: {
           <!-- Header GTX -->
           <tr>
             <td style="background-color: #22c55e; padding: 40px 30px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700;">📊</h1>
-              <h2 style="margin: 12px 0 0 0; color: #ffffff; font-size: 24px; font-weight: 700;">${cadenceLabels[params.cadence] || params.cadence}</h2>
+              <img src="https://app.agenciagtx.com.br/favicon.png" alt="GTX Logo" style="width: 56px; height: 56px; margin: 0 auto 16px auto; display: block;" />
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700;">📊 ${cadenceLabels[params.cadence] || params.cadence}</h1>
               <p style="margin: 8px 0 0 0; color: #dcfce7; font-size: 14px;">Sistema GTX</p>
             </td>
           </tr>

@@ -73,8 +73,8 @@ export function LoginForm() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700">
             Senha
           </label>
-          <a href="#" className="text-sm text-brand-600 hover:text-brand-700">
-            Esqueceu?
+          <a href="/recuperar-senha" className="text-sm text-brand-600 hover:text-brand-700">
+            Esqueceu a senha?
           </a>
         </div>
         <input
