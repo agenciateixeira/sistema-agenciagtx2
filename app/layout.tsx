@@ -7,7 +7,11 @@ export const metadata: Metadata = {
     'Login e dashboard inteligente da Agência GTX com relatórios personalizados, notificações proativas e onboarding guiado.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/images/favicon.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/images/favicon.png', type: 'image/png' }
+    ],
+    shortcut: '/favicon.ico',
     apple: '/images/favicon.png'
   }
 };
