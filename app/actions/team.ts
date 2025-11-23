@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
+import { requireAdmin } from '@/lib/auth-helpers';
 
 async function getSupabaseServer() {
   const cookieStore = cookies();
@@ -27,6 +28,13 @@ export async function inviteTeamMember(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Não autenticado' };
+  }
+
+  // 🔒 VERIFICAÇÃO DE SEGURANÇA: Apenas ADMIN pode convidar
+  try {
+    await requireAdmin(user.id);
+  } catch (error: any) {
+    return { error: error.message };
   }
 
   const email = formData.get('email') as string;
@@ -143,6 +151,13 @@ export async function cancelInvite(inviteId: string) {
     return { error: 'Não autenticado' };
   }
 
+  // 🔒 VERIFICAÇÃO DE SEGURANÇA: Apenas ADMIN pode cancelar convites
+  try {
+    await requireAdmin(user.id);
+  } catch (error: any) {
+    return { error: error.message };
+  }
+
   try {
     // Verificar se o convite existe e foi enviado pelo usuário atual
     const { data: invite } = await supabase
@@ -184,6 +199,13 @@ export async function updateMemberRole(memberId: string, newRole: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Não autenticado' };
+  }
+
+  // 🔒 VERIFICAÇÃO DE SEGURANÇA: Apenas ADMIN pode alterar roles
+  try {
+    await requireAdmin(user.id);
+  } catch (error: any) {
+    return { error: error.message };
   }
 
   // Não permitir alterar a própria permissão
@@ -242,6 +264,13 @@ export async function removeTeamMember(memberId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return { error: 'Não autenticado' };
+  }
+
+  // 🔒 VERIFICAÇÃO DE SEGURANÇA: Apenas ADMIN pode remover membros
+  try {
+    await requireAdmin(user.id);
+  } catch (error: any) {
+    return { error: error.message };
   }
 
   // Não permitir remover a si mesmo
