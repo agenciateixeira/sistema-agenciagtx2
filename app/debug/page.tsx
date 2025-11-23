@@ -98,6 +98,13 @@ export default function DebugPage() {
             >
               📧 Testar Envio de Email
             </button>
+            <button
+              onClick={() => runTest('test-auth-flow')}
+              disabled={loading}
+              className="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 font-medium"
+            >
+              🚨 Teste DEFINITIVO (Email Único)
+            </button>
           </div>
 
           {loading && (
