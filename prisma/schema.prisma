@@ -352,3 +352,40 @@ model ChatTag {
 
   @@id([threadId, tagId])
 }
+
+enum EmailStatus {
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  COMPLAINED
+  FAILED
+}
+
+enum EmailType {
+  TEAM_INVITE
+  NOTIFICATION
+  REPORT
+}
+
+model EmailLog {
+  id          String      @id @default(uuid())
+  emailId     String      @unique // ID do Resend
+  type        EmailType
+  to          String
+  subject     String
+  status      EmailStatus @default(SENT)
+  sentAt      DateTime    @default(now())
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  bouncedAt   DateTime?
+  metadata    Json?       // Dados adicionais (nome do relatório, etc)
+  events      Json[]      @default([]) // Histórico de eventos do webhook
+
+  @@index([emailId])
+  @@index([to])
+  @@index([status])
+  @@index([sentAt])
+}

@@ -79,7 +79,7 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
     <div className="mt-6 space-y-3">
       {members.map((member) => {
         const isCurrentUser = member.id === currentUserId;
-        const role = 'ADMIN'; // Por enquanto fixo, depois pegará do banco
+        const role = member.role || 'VIEWER'; // Role do banco ou VIEWER por padrão
         const RoleIcon = roleIcons[role] || UserCog;
 
         return (
