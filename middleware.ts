@@ -61,9 +61,22 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Public routes
-  const publicRoutes = ['/', '/login', '/cadastro'];
-  const isPublicRoute = publicRoutes.includes(pathname);
+  // Public routes (páginas que não precisam de autenticação)
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/cadastro',
+    '/recuperar-senha',
+    '/recuperar-senha/redefinir',
+    '/debug',
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
+
+  // API routes e accept-invite são sempre públicas
+  if (pathname.startsWith('/api/') || pathname.startsWith('/accept-invite')) {
+    return response;
+  }
 
   // If user is authenticated and trying to access login/cadastro, redirect to dashboard
   if (user && (pathname === '/login' || pathname === '/cadastro' || pathname === '/')) {

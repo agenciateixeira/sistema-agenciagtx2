@@ -1,0 +1,6 @@
+Force rebuild - 2025-01-23 18:00:00
+This file forces Vercel to do a complete rebuild.
+Changes:
+- Fixed middleware to allow /recuperar-senha routes
+- Fixed manifest icon paths
+- Public routes now include password recovery pages
