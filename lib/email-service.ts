@@ -164,16 +164,25 @@ export async function sendWelcomeEmail(params: {
           <tr>
             <td style="padding: 40px 30px;">
               <h3 style="margin: 0 0 8px 0; color: #1f2937; font-size: 22px; font-weight: 600;">Olá, ${params.userName}!</h3>
-              <p style="margin: 0 0 24px 0; color: #6b7280; font-size: 16px;">Sua conta foi criada com sucesso. Use as credenciais abaixo para fazer login.</p>
+              <p style="margin: 0 0 24px 0; color: #6b7280; font-size: 16px;">Sua conta foi criada com sucesso! 🎉</p>
+
+              <!-- SENHA DESTACADA -->
+              <div style="background-color: #15803d; border-radius: 12px; padding: 32px; margin: 30px 0; text-align: center;">
+                <p style="margin: 0 0 12px 0; color: #dcfce7; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">🔑 SUA SENHA DE PRIMEIRO ACESSO</p>
+                <div style="background-color: #ffffff; border-radius: 8px; padding: 20px; margin: 16px 0;">
+                  <p style="margin: 0; color: #15803d; font-size: 32px; font-weight: 900; font-family: 'Courier New', monospace; letter-spacing: 4px;">${params.tempPassword}</p>
+                </div>
+                <p style="margin: 16px 0 0 0; color: #dcfce7; font-size: 13px;">Use esta senha para fazer seu primeiro login</p>
+              </div>
 
               <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a; border-radius: 8px; padding: 24px; margin: 30px 0;">
-                <h4 style="margin: 0 0 16px 0; color: #15803d; font-size: 16px; font-weight: 600;">🔑 Suas Credenciais de Acesso</h4>
+                <h4 style="margin: 0 0 16px 0; color: #15803d; font-size: 16px; font-weight: 600;">📋 Suas Credenciais Completas</h4>
                 <div style="background-color: #ffffff; border-radius: 6px; padding: 16px; margin-bottom: 12px;">
                   <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Email</p>
                   <p style="margin: 0; color: #1f2937; font-size: 16px; font-weight: 600; font-family: 'Courier New', monospace;">${params.to}</p>
                 </div>
                 <div style="background-color: #ffffff; border-radius: 6px; padding: 16px;">
-                  <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Senha Temporária</p>
+                  <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Senha</p>
                   <p style="margin: 0; color: #15803d; font-size: 20px; font-weight: 700; font-family: 'Courier New', monospace;">${params.tempPassword}</p>
                 </div>
               </div>

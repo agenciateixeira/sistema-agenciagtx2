@@ -68,6 +68,12 @@ export async function GET(req: NextRequest) {
     // Senha padrão
     const defaultPassword = 'GTX@2025';
 
+    console.log('🔐 Criando usuário:', {
+      email: invite.email,
+      name: invite.name,
+      password: defaultPassword,
+    });
+
     // Criar usuário no Supabase Auth
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: invite.email,
@@ -81,9 +87,11 @@ export async function GET(req: NextRequest) {
     });
 
     if (createError || !newUser.user) {
-      console.error('Erro ao criar usuário:', createError);
+      console.error('❌ Erro ao criar usuário:', createError);
       return NextResponse.redirect(new URL('/login?error=create_user_failed', req.url));
     }
+
+    console.log('✅ Usuário criado no Supabase Auth:', newUser.user.id);
 
     // Criar perfil do usuário (email fica no auth.users, não em profiles)
     const { error: profileError } = await supabase.from('profiles').insert({
@@ -112,14 +120,21 @@ export async function GET(req: NextRequest) {
 
     // Enviar email com credenciais
     try {
+      console.log('📧 Enviando email de boas-vindas para:', invite.email);
       const { sendWelcomeEmail } = await import('@/lib/email-service');
-      await sendWelcomeEmail({
+      const emailResult = await sendWelcomeEmail({
         to: invite.email,
         userName: invite.name,
         tempPassword: defaultPassword,
       });
+
+      if (emailResult.success) {
+        console.log('✅ Email de boas-vindas enviado com sucesso!');
+      } else {
+        console.error('❌ Erro ao enviar email:', emailResult.error);
+      }
     } catch (emailError) {
-      console.error('Erro ao enviar email de boas-vindas:', emailError);
+      console.error('❌ Exceção ao enviar email de boas-vindas:', emailError);
       // Não falhar se o email não enviar
     }
 
