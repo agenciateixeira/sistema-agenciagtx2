@@ -41,6 +41,7 @@ CREATE INDEX IF NOT EXISTS idx_team_invite_token ON "TeamInvite"(token);
 CREATE INDEX IF NOT EXISTS idx_team_invite_expires_at ON "TeamInvite"("expiresAt") WHERE "expiresAt" IS NOT NULL;
 
 -- Criar trigger para updated_at
+DROP TRIGGER IF EXISTS update_team_invite_updated_at ON "TeamInvite";
 CREATE TRIGGER update_team_invite_updated_at
   BEFORE UPDATE ON "TeamInvite"
   FOR EACH ROW

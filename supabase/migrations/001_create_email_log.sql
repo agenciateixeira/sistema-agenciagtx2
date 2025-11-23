@@ -63,6 +63,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Criar trigger para updated_at
+DROP TRIGGER IF EXISTS update_email_log_updated_at ON "EmailLog";
 CREATE TRIGGER update_email_log_updated_at
   BEFORE UPDATE ON "EmailLog"
   FOR EACH ROW
