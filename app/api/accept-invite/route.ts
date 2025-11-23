@@ -93,6 +93,21 @@ export async function GET(req: NextRequest) {
 
     console.log('✅ Usuário criado no Supabase Auth:', newUser.user.id);
 
+    // WORKAROUND: Forçar o Supabase a salvar a senha corretamente
+    // Bug conhecido: createUser() às vezes não salva a senha
+    console.log('🔄 Atualizando senha do usuário para garantir que funcione...');
+    const { error: updateError } = await supabase.auth.admin.updateUserById(
+      newUser.user.id,
+      { password: defaultPassword }
+    );
+
+    if (updateError) {
+      console.error('⚠️ Erro ao atualizar senha (continuando):', updateError);
+      // Não vamos falhar por causa disso
+    } else {
+      console.log('✅ Senha atualizada com sucesso');
+    }
+
     // Criar perfil do usuário (email fica no auth.users, não em profiles)
     const { error: profileError } = await supabase.from('profiles').insert({
       id: newUser.user.id,

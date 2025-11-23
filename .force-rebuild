@@ -1,6 +1,9 @@
-Force rebuild - 2025-01-23 18:00:00
+Force rebuild - 2025-01-23 21:00:00
 This file forces Vercel to do a complete rebuild.
 Changes:
 - Fixed middleware to allow /recuperar-senha routes
 - Fixed manifest icon paths
 - Public routes now include password recovery pages
+- CRITICAL FIX: Added password update workaround in accept-invite route
+- Supabase admin.createUser() bug: password not saving correctly
+- Solution: Call admin.updateUserById() immediately after createUser()
