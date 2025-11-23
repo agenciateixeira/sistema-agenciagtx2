@@ -1,6 +1,5 @@
 import { SectionTitle } from '@/components/dashboard/section-title';
-import { teamMembers, onboardingChecklist } from '@/data/dashboard';
-import { Plus, CheckCircle, Circle, User } from 'lucide-react';
+import { Plus, Users } from 'lucide-react';
 
 export default function TeamPage() {
   return (
@@ -17,57 +16,16 @@ export default function TeamPage() {
           }
         />
 
-        <div className="mt-6 space-y-3">
-          {teamMembers.map((member) => (
-            <div
-              key={member.id}
-              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                  <User className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">{member.name}</p>
-                  <p className="text-sm text-gray-600">{member.role}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Último acesso</p>
-                <p className="text-sm font-medium text-gray-900">{member.lastActive}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <SectionTitle
-          title="Configuração do Workspace"
-          description="Status das integrações e configurações"
-        />
-
-        <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {onboardingChecklist.map((step) => (
-            <div
-              key={step.id}
-              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
-            >
-              <div className="flex items-center gap-3">
-                {step.done ? (
-                  <CheckCircle className="h-5 w-5 text-brand-600" />
-                ) : (
-                  <Circle className="h-5 w-5 text-gray-400" />
-                )}
-                <span className={step.done ? 'text-gray-900' : 'text-gray-600'}>{step.label}</span>
-              </div>
-              <span
-                className={`text-xs font-medium ${step.done ? 'text-brand-600' : 'text-gray-400'}`}
-              >
-                {step.done ? 'Concluído' : 'Pendente'}
-              </span>
-            </div>
-          ))}
+        <div className="mt-12 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Users className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-gray-900">
+            Nenhum membro cadastrado
+          </h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Adicione membros da equipe para começar a colaborar
+          </p>
         </div>
       </div>
     </div>

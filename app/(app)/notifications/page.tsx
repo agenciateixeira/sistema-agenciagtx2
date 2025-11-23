@@ -1,12 +1,5 @@
 import { SectionTitle } from '@/components/dashboard/section-title';
-import { notifications } from '@/data/dashboard';
-import { Bell, AlertTriangle, Info, CheckCircle } from 'lucide-react';
-
-const severityConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  Alta: { icon: AlertTriangle, color: 'text-red-700', bg: 'bg-red-50 border-red-200' },
-  Média: { icon: Info, color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200' },
-  Baixa: { icon: CheckCircle, color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' }
-};
+import { Bell } from 'lucide-react';
 
 export default function NotificationsPage() {
   return (
@@ -29,36 +22,16 @@ export default function NotificationsPage() {
           description="Notificações de eventos críticos e mudanças no sistema"
         />
 
-        <div className="mt-6 space-y-3">
-          {notifications.map((alert) => {
-            const severity = alert.severity || 'Baixa';
-            const config = severityConfig[severity] || severityConfig.Baixa;
-            const Icon = config.icon;
-
-            return (
-              <div
-                key={alert.id}
-                className={`rounded-lg border p-4 ${config.bg}`}
-              >
-                <div className="flex items-start gap-3">
-                  <Icon className={`h-5 w-5 ${config.color} flex-shrink-0`} />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className={`text-xs font-semibold uppercase ${config.color}`}>
-                        {alert.type}
-                      </span>
-                      <span className="text-xs text-gray-500">{alert.time}</span>
-                    </div>
-                    <p className="mt-2 text-sm text-gray-900">{alert.message}</p>
-                    <div className="mt-3 flex items-center gap-4 text-xs text-gray-600">
-                      <span>Canal: {alert.channel}</span>
-                      <span>Severidade: {severity}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div className="mt-12 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
+            <Bell className="h-8 w-8 text-gray-400" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-gray-900">
+            Nenhuma notificação
+          </h3>
+          <p className="mt-2 text-sm text-gray-600">
+            Você receberá alertas importantes aqui
+          </p>
         </div>
       </div>
 
