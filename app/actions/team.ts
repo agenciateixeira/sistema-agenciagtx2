@@ -92,6 +92,7 @@ export async function inviteTeamMember(formData: FormData) {
       inviteeName: name,
       inviterName: profile?.nome || 'Um administrador',
       role: role,
+      token: token, // Passar o token para o email
     });
 
     // Atualizar convite com ID do email enviado
