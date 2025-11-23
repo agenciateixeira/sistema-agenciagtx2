@@ -113,6 +113,9 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                   )}
                 </div>
                 <p className="text-sm text-gray-600">
+                  {member.email || 'Email não disponível'}
+                </p>
+                <p className="text-xs text-gray-500">
                   Membro desde {new Date(member.created_at).toLocaleDateString('pt-BR')}
                 </p>
               </div>

@@ -49,10 +49,10 @@ export default async function TeamPage() {
         .order('invitedAt', { ascending: false })
     : { data: null };
 
-  // Buscar membros da equipe
+  // Buscar membros da equipe (usando view que inclui email)
   const { data: members } = await supabase
-    .from('profiles')
-    .select('id, nome, role, created_at, avatar_url')
+    .from('profiles_with_email')
+    .select('id, nome, email, role, created_at, avatar_url')
     .order('created_at', { ascending: false });
 
   return (
