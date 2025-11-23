@@ -112,20 +112,39 @@ export async function GET(req: NextRequest) {
     }
 
     // Criar perfil do usuário (email fica no auth.users, não em profiles)
-    const { error: profileError } = await supabase.from('profiles').insert({
+    console.log('👤 Criando perfil do usuário...');
+    console.log('Dados do perfil:', {
       id: newUser.user.id,
       nome: invite.name,
       role: invite.role,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     });
 
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: newUser.user.id,
+        nome: invite.name,
+        role: invite.role,
+        // created_at e updated_at usam DEFAULT do banco
+      })
+      .select();
+
     if (profileError) {
-      console.error('Erro ao criar perfil:', profileError);
+      console.error('❌ ERRO ao criar perfil:', profileError);
+      console.error('Detalhes completos:', JSON.stringify(profileError, null, 2));
+
       // Tentar deletar o usuário criado
       await supabase.auth.admin.deleteUser(newUser.user.id);
-      return NextResponse.redirect(new URL('/login?error=create_profile_failed', req.url));
+
+      return NextResponse.redirect(
+        new URL(
+          `/login?error=create_profile_failed&details=${encodeURIComponent(profileError.message)}`,
+          req.url
+        )
+      );
     }
+
+    console.log('✅ Perfil criado com sucesso:', profileData);
 
     // Marcar convite como aceito
     await supabase

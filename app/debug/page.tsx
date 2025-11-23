@@ -105,6 +105,13 @@ export default function DebugPage() {
             >
               🚨 Teste DEFINITIVO (Email Único)
             </button>
+            <button
+              onClick={() => runTest('test-profile-insert')}
+              disabled={loading}
+              className="px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 font-medium"
+            >
+              📝 Testar Inserção de Perfil
+            </button>
           </div>
 
           {loading && (
