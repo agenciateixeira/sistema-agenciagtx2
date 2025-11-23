@@ -21,7 +21,7 @@ export function LoginForm() {
 
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -32,13 +32,20 @@ export function LoginForm() {
         return;
       }
 
+      if (!data.session) {
+        setStatus('error');
+        setMessage('Erro ao criar sessão. Tente novamente.');
+        return;
+      }
+
       setStatus('success');
       setMessage('Login realizado com sucesso, redirecionando...');
 
-      // Force redirect after small delay
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 500);
+      // Wait a bit longer for session to be saved in cookies
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Force full page reload to ensure middleware picks up session
+      window.location.href = '/dashboard';
     } catch (error) {
       setStatus('error');
       setMessage('Erro ao fazer login. Tente novamente.');
