@@ -16,7 +16,7 @@ CREATE POLICY "Usuários podem ver convites para eles"
   FOR SELECT
   TO authenticated
   USING (
-    email = (SELECT email FROM profiles WHERE id = auth.uid())
+    email = auth.email()
     AND status = 'PENDING'
   );
 

@@ -22,7 +22,7 @@ CREATE POLICY "Usuários podem ver seus emails"
   FOR SELECT
   TO authenticated
   USING (
-    "to" = (SELECT email FROM profiles WHERE id = auth.uid())
+    "to" = auth.email()
   );
 
 -- Policy: Admins podem ver todos os emails
