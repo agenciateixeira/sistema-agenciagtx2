@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+// Force dynamic rendering (não fazer static generation)
+export const dynamic = 'force-dynamic';
+
 // Cliente Supabase com service role para criar usuário
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
