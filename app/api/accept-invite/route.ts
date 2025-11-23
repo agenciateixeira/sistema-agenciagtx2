@@ -111,26 +111,31 @@ export async function GET(req: NextRequest) {
       console.log('✅ Senha atualizada com sucesso');
     }
 
-    // Criar perfil do usuário (email fica no auth.users, não em profiles)
-    console.log('👤 Criando perfil do usuário...');
+    // Criar ou atualizar perfil do usuário (UPSERT)
+    console.log('👤 Criando/atualizando perfil do usuário...');
     console.log('Dados do perfil:', {
       id: newUser.user.id,
       nome: invite.name,
       role: invite.role,
     });
 
+    // Usar upsert para evitar erro de duplicate key
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
-      .insert({
+      .upsert({
         id: newUser.user.id,
         nome: invite.name,
         role: invite.role,
-        // created_at e updated_at usam DEFAULT do banco
+        updated_at: new Date().toISOString(),
+        // created_at vai usar DEFAULT na primeira vez
+      }, {
+        onConflict: 'id',
+        ignoreDuplicates: false,
       })
       .select();
 
     if (profileError) {
-      console.error('❌ ERRO ao criar perfil:', profileError);
+      console.error('❌ ERRO ao criar/atualizar perfil:', profileError);
       console.error('Detalhes completos:', JSON.stringify(profileError, null, 2));
 
       // Tentar deletar o usuário criado
@@ -144,7 +149,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log('✅ Perfil criado com sucesso:', profileData);
+    console.log('✅ Perfil criado/atualizado com sucesso:', profileData);
 
     // Marcar convite como aceito
     await supabase
