@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { recoverPassword } from '@/app/actions/auth';
+import { recoverPassword } from '../../app/actions/auth';
 
 export function RecoverPasswordForm() {
   const [email, setEmail] = useState('');
