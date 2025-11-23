@@ -29,11 +29,15 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('nome, role')
+        const { data: profile, error } = await supabase
+          .from('profiles_with_email')
+          .select('nome, role, email')
           .eq('id', user.id)
           .single();
+
+        if (error) {
+          console.error('Erro ao carregar perfil:', error);
+        }
 
         if (profile) {
           setUserProfile(profile);
