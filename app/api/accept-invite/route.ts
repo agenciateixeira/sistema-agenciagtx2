@@ -85,10 +85,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=create_user_failed', req.url));
     }
 
-    // Criar perfil do usuário
+    // Criar perfil do usuário (email fica no auth.users, não em profiles)
     const { error: profileError } = await supabase.from('profiles').insert({
       id: newUser.user.id,
-      email: invite.email,
       nome: invite.name,
       role: invite.role,
       created_at: new Date().toISOString(),
