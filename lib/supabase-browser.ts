@@ -1,6 +1,6 @@
 'use client';
 
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient } from '@supabase/ssr';
 
 let client = typeof window === 'undefined' ? null : globalThis.__supabase__;
 
@@ -13,7 +13,7 @@ export function getSupabaseBrowserClient() {
       throw new Error('Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY são obrigatórias.');
     }
 
-    client = createClient(url, anonKey);
+    client = createBrowserClient(url, anonKey);
     if (typeof window !== 'undefined') {
       globalThis.__supabase__ = client;
     }
@@ -24,5 +24,5 @@ export function getSupabaseBrowserClient() {
 
 declare global {
   // eslint-disable-next-line no-var
-  var __supabase__: ReturnType<typeof createClient> | null | undefined;
+  var __supabase__: ReturnType<typeof createBrowserClient> | null | undefined;
 }
