@@ -10,12 +10,9 @@ html,
 body {
   max-width: 100%;
   min-height: 100vh;
-  color: #f8fafc;
+  color: #1f2937;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  background-color: #020617;
-  background-image: radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.15), transparent 55%),
-    radial-gradient(circle at 80% 0%, rgba(8, 47, 73, 0.9), transparent 45%),
-    linear-gradient(135deg, #020617 0%, #0f172a 60%, #052e16 100%);
+  background-color: #ffffff;
 }
 
 a {
