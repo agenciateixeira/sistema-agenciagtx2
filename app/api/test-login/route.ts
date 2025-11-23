@@ -86,6 +86,20 @@ export async function GET(req: Request) {
     console.log('   Email:', newUser.user?.email);
     console.log('   Email confirmado?', newUser.user?.email_confirmed_at ? 'SIM' : 'NÃO');
 
+    // PASSO 2.5: WORKAROUND - Forçar atualização da senha (bug do Supabase)
+    console.log('\n🔄 PASSO 2.5: Atualizando senha (workaround para bug do Supabase)...');
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      newUser.user!.id,
+      { password: testPassword }
+    );
+
+    if (updateError) {
+      console.error('   ⚠️  Erro ao atualizar senha:', updateError);
+      console.log('   ⚠️  Continuando mesmo assim...');
+    } else {
+      console.log('   ✅ Senha atualizada com sucesso');
+    }
+
     // PASSO 3: Criar perfil
     console.log('\n👤 PASSO 3: Criando perfil...');
     const { error: profileError } = await supabaseAdmin.from('profiles').insert({
