@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS "TeamInvite" (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  -- Foreign key para o usuário que convidou
-  CONSTRAINT fk_invited_by FOREIGN KEY ("invitedBy") REFERENCES auth.users(id) ON DELETE CASCADE
+  -- Foreign key para o usuário que convidou (referencia profiles ao invés de auth.users para evitar problemas de RLS)
+  CONSTRAINT fk_invited_by FOREIGN KEY ("invitedBy") REFERENCES profiles(id) ON DELETE CASCADE
 );
 
 -- Criar índices para performance

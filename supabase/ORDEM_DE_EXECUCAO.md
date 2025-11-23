@@ -82,6 +82,19 @@ supabase/migrations/004_team_invites_rls.sql
 
 ---
 
+### 005 - Corrigir Foreign Key do TeamInvite
+```
+supabase/migrations/005_fix_team_invite_fk.sql
+```
+**O que faz:**
+- Remove foreign key que referencia `auth.users`
+- Adiciona nova foreign key referenciando `profiles`
+- Corrige erro "permission denied for table users"
+
+**⚠️ Execute se já tinha executado a migration 003 antes**
+
+---
+
 ## ✅ Verificação
 
 Após executar todas as migrations, verifique no **Table Editor**:
