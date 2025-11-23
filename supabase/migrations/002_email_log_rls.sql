@@ -22,9 +22,7 @@ CREATE POLICY "Usuários podem ver seus emails"
   FOR SELECT
   TO authenticated
   USING (
-    auth.uid()::text IN (
-      SELECT id::text FROM auth.users WHERE email = "EmailLog"."to"
-    )
+    "to" = (SELECT email FROM profiles WHERE id = auth.uid())
   );
 
 -- Policy: Admins podem ver todos os emails
