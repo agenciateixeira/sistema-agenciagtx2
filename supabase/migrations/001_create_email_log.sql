@@ -1,23 +1,33 @@
--- Criar enum para status de email
-CREATE TYPE email_status AS ENUM (
-  'SENT',
-  'DELIVERED',
-  'OPENED',
-  'CLICKED',
-  'BOUNCED',
-  'COMPLAINED',
-  'FAILED'
-);
+-- Criar enum para status de email (se não existir)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'email_status') THEN
+    CREATE TYPE email_status AS ENUM (
+      'SENT',
+      'DELIVERED',
+      'OPENED',
+      'CLICKED',
+      'BOUNCED',
+      'COMPLAINED',
+      'FAILED'
+    );
+  END IF;
+END$$;
 
--- Criar enum para tipo de email
-CREATE TYPE email_type AS ENUM (
-  'TEAM_INVITE',
-  'NOTIFICATION',
-  'REPORT'
-);
+-- Criar enum para tipo de email (se não existir)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'email_type') THEN
+    CREATE TYPE email_type AS ENUM (
+      'TEAM_INVITE',
+      'NOTIFICATION',
+      'REPORT'
+    );
+  END IF;
+END$$;
 
--- Criar tabela EmailLog para tracking de emails
-CREATE TABLE "EmailLog" (
+-- Criar tabela EmailLog para tracking de emails (se não existir)
+CREATE TABLE IF NOT EXISTS "EmailLog" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "emailId" VARCHAR(255) UNIQUE NOT NULL, -- ID do Resend
   type email_type NOT NULL,

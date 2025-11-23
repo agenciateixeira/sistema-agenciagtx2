@@ -1,13 +1,18 @@
--- Criar enum para status de convite
-CREATE TYPE invite_status AS ENUM (
-  'PENDING',
-  'ACCEPTED',
-  'EXPIRED',
-  'CANCELLED'
-);
+-- Criar enum para status de convite (se não existir)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'invite_status') THEN
+    CREATE TYPE invite_status AS ENUM (
+      'PENDING',
+      'ACCEPTED',
+      'EXPIRED',
+      'CANCELLED'
+    );
+  END IF;
+END$$;
 
--- Criar tabela TeamInvite para rastrear convites pendentes
-CREATE TABLE "TeamInvite" (
+-- Criar tabela TeamInvite para rastrear convites pendentes (se não existir)
+CREATE TABLE IF NOT EXISTS "TeamInvite" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email VARCHAR(255) NOT NULL,
   name VARCHAR(255) NOT NULL,
