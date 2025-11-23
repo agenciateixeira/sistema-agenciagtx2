@@ -34,6 +34,13 @@ export async function createReport(formData: FormData) {
   const channel = formData.get('channel') as string;
 
   try {
+    // Buscar perfil do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome')
+      .eq('id', user.id)
+      .single();
+
     // Criar template de relatório
     const { data: template, error: templateError } = await supabase
       .from('ReportTemplate')
@@ -61,8 +68,20 @@ export async function createReport(formData: FormData) {
 
     if (scheduleError) throw scheduleError;
 
+    // Se canal for EMAIL, enviar email de confirmação
+    if (channel.toUpperCase() === 'EMAIL') {
+      const { sendReportEmail } = await import('@/lib/email-service');
+      await sendReportEmail({
+        to: user.email!,
+        userName: profile?.nome || 'Usuário',
+        reportName: name,
+        cadence: cadence.toUpperCase(),
+        summary: description || 'Relatório configurado e pronto para ser enviado automaticamente.',
+      });
+    }
+
     revalidatePath('/reports');
-    return { success: true };
+    return { success: true, message: channel.toUpperCase() === 'EMAIL' ? 'Relatório criado! Email de confirmação enviado.' : 'Relatório criado com sucesso!' };
   } catch (error: any) {
     return { error: error.message };
   }

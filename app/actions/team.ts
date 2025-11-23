@@ -33,9 +33,12 @@ export async function inviteTeamMember(formData: FormData) {
   const role = formData.get('role') as string;
 
   try {
-    // Convite via Admin API do Supabase
-    // Nota: Em produção, você precisaria usar o Supabase Admin SDK
-    // Por enquanto vamos criar um registro de convite pendente
+    // Buscar perfil do usuário atual
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome')
+      .eq('id', user.id)
+      .single();
 
     // Verificar se o email já está cadastrado
     const { data: existingUser } = await supabase
@@ -48,13 +51,23 @@ export async function inviteTeamMember(formData: FormData) {
       return { error: 'Este email já está cadastrado no sistema' };
     }
 
-    // Criar registro de convite (você precisaria criar esta tabela)
-    // Por enquanto vamos apenas retornar sucesso
+    // Enviar email de convite
+    const { sendTeamInviteEmail } = await import('@/lib/email-service');
+    const emailResult = await sendTeamInviteEmail({
+      to: email,
+      inviteeName: name,
+      inviterName: profile?.nome || 'Um administrador',
+      role: role,
+    });
+
+    if (!emailResult.success) {
+      return { error: `Erro ao enviar email: ${emailResult.error}` };
+    }
 
     revalidatePath('/team');
     return {
       success: true,
-      message: `Convite enviado para ${email}. Em produção, um email seria enviado com link de cadastro.`
+      message: `✅ Convite enviado para ${email}! O membro receberá um email com o link de cadastro.`
     };
   } catch (error: any) {
     return { error: error.message };

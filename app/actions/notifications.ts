@@ -34,6 +34,14 @@ export async function createNotification(formData: FormData) {
   const channel = formData.get('channel') as string;
 
   try {
+    // Buscar perfil do usuário
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('nome')
+      .eq('id', user.id)
+      .single();
+
+    // Criar notificação no banco
     const { error } = await supabase
       .from('Notification')
       .insert({
@@ -47,8 +55,20 @@ export async function createNotification(formData: FormData) {
 
     if (error) throw error;
 
+    // Se canal for EMAIL, enviar email
+    if (channel.toUpperCase() === 'EMAIL') {
+      const { sendNotificationEmail } = await import('@/lib/email-service');
+      await sendNotificationEmail({
+        to: user.email!,
+        userName: profile?.nome || 'Usuário',
+        title,
+        message,
+        severity: severity.toUpperCase(),
+      });
+    }
+
     revalidatePath('/notifications');
-    return { success: true };
+    return { success: true, message: channel.toUpperCase() === 'EMAIL' ? 'Notificação criada e email enviado!' : 'Notificação criada com sucesso!' };
   } catch (error: any) {
     return { error: error.message };
   }
