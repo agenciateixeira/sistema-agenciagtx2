@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { appNavigation } from '@/lib/navigation';
 import { Bell, Search, User, LogOut, Menu, X } from 'lucide-react';
@@ -11,17 +11,50 @@ interface TopbarProps {
   isMobileMenuOpen?: boolean;
 }
 
+interface UserProfile {
+  nome: string;
+  role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+}
+
 export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const current = appNavigation.find((item) => item.href === pathname)?.name || 'Dashboard';
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    async function loadUserProfile() {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('nome, role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile) {
+          setUserProfile(profile);
+        }
+      }
+    }
+
+    loadUserProfile();
+  }, []);
 
   async function handleLogout() {
     const supabase = getSupabaseBrowserClient();
     await supabase.auth.signOut();
     router.push('/login');
   }
+
+  const roleLabels = {
+    ADMIN: 'Administrador',
+    EDITOR: 'Editor',
+    VIEWER: 'Visualizador',
+  };
 
   return (
     <header className="sticky top-0 z-20 border-b border-gray-200 bg-white">
@@ -60,8 +93,12 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
                 <User className="h-4 w-4" />
               </div>
               <div className="hidden text-left lg:block">
-                <p className="text-sm font-medium text-gray-900">Guilherme</p>
-                <span className="text-xs text-gray-500">Admin</span>
+                <p className="text-sm font-medium text-gray-900">
+                  {userProfile?.nome || 'Carregando...'}
+                </p>
+                <span className="text-xs text-gray-500">
+                  {userProfile ? roleLabels[userProfile.role] : '...'}
+                </span>
               </div>
             </button>
 
