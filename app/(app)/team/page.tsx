@@ -31,23 +31,52 @@ export default async function TeamPage() {
     return null;
   }
 
-  // Buscar convites pendentes
-  const { data: invites } = await supabase
-    .from('TeamInvite')
-    .select('*')
-    .eq('status', 'PENDING')
-    .order('invitedAt', { ascending: false });
+  // Buscar perfil do usuário logado para verificar role
+  const { data: currentUserProfile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single();
+
+  const isAdmin = currentUserProfile?.role === 'ADMIN';
+
+  // Buscar convites pendentes (apenas para admins)
+  const { data: invites } = isAdmin
+    ? await supabase
+        .from('TeamInvite')
+        .select('*')
+        .eq('status', 'PENDING')
+        .order('invitedAt', { ascending: false })
+    : { data: null };
 
   // Buscar membros da equipe
   const { data: members } = await supabase
     .from('profiles')
-    .select('id, nome, email, role, created_at, avatar_url')
+    .select('id, nome, role, created_at, avatar_url')
     .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6">
-      {/* Formulário de convite */}
-      <InviteMemberForm />
+      {/* Formulário de convite - APENAS PARA ADMINS */}
+      {isAdmin ? (
+        <InviteMemberForm />
+      ) : (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-6">
+          <div className="flex gap-3">
+            <div className="flex-shrink-0">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-medium text-blue-800">Você faz parte desta equipe</h3>
+              <p className="mt-2 text-sm text-blue-700">
+                Apenas administradores podem convidar novos membros.
+                {currentUserProfile?.role === 'EDITOR' && ' Como Editor, você pode gerenciar conteúdo e relatórios.'}
+                {currentUserProfile?.role === 'VIEWER' && ' Como Visualizador, você tem acesso de leitura aos dados.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Convites Pendentes */}
       {invites && invites.length > 0 && (
