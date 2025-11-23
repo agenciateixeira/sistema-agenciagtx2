@@ -27,7 +27,7 @@
 1. Acesse https://vercel.com/dashboard
 2. Selecione o projeto `sistema-agenciagtx2`
 3. Vá em **Settings** → **Environment Variables**
-4. Confirme que existe: `RESEND_API_KEY = re_KzT9ktaT_EAWBb6bDpGUqAusCqUrLuK2d`
+4. Confirme que existe: `RESEND_API_KEY` (valor deve começar com `re_`)
 
 ### 4. Verificar Logs do Vercel (se já fez deploy)
 1. Acesse https://vercel.com/dashboard
@@ -109,7 +109,7 @@ npm run dev
 ## 📊 Verificar no Dashboard do Resend
 
 1. **API Keys**: https://resend.com/api-keys
-   - Confirme que a key `re_KzT9ktaT_EAWBb6bDpGUqAusCqUrLuK2d` está ativa
+   - Confirme que sua API key está ativa (deve começar com `re_`)
 
 2. **Domains**: https://resend.com/domains
    - Status deve ser: ✅ Verified
@@ -130,7 +130,7 @@ npm run dev
 ### Testar envio direto (usando curl)
 ```bash
 curl -X POST https://api.resend.com/emails \\
-  -H "Authorization: Bearer re_KzT9ktaT_EAWBb6bDpGUqAusCqUrLuK2d" \\
+  -H "Authorization: Bearer $RESEND_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "from": "Sistema GTX <noreply@agenciagtx.com.br>",
@@ -144,7 +144,7 @@ curl -X POST https://api.resend.com/emails \\
 ```bash
 # Substitua EMAIL_ID pelo ID retornado ao enviar
 curl https://api.resend.com/emails/EMAIL_ID \\
-  -H "Authorization: Bearer re_KzT9ktaT_EAWBb6bDpGUqAusCqUrLuK2d"
+  -H "Authorization: Bearer $RESEND_API_KEY"
 ```
 
 ## 📝 Checklist de Configuração Completa
