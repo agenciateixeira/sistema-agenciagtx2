@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 declare global {
   interface Window {
@@ -13,7 +13,6 @@ const PIXEL_ID = '611003988383118';
 
 export function FacebookPixel() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   useEffect(() => {
     // Load Facebook Pixel script
@@ -52,7 +51,7 @@ export function FacebookPixel() {
     if (window.fbq) {
       window.fbq('track', 'PageView');
     }
-  }, [pathname, searchParams]);
+  }, [pathname]);
 
   return null;
 }
