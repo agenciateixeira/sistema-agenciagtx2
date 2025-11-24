@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { BarChart3, Mail, Settings } from 'lucide-react';
 
 interface Tab {
