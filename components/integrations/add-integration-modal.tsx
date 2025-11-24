@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import Image from 'next/image';
 import { addIntegration } from '@/app/actions/integrations';
 
 interface AddIntegrationModalProps {
@@ -65,9 +66,13 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
                 }`}
               >
                 <div className="mx-auto h-12 w-12 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="h-10 w-10" fill="#95BF47">
-                    <path d="M15.337 23.979l7.216-1.561s-2.604-17.613-2.625-17.73c-.018-.116-.114-.192-.211-.192s-1.851-.084-1.851-.084-1.213-1.17-1.326-1.282-.257-.096-.366-.054c-.008.003-.024.008-.024.008s-.711.223-1.922.613c-.12-.36-.299-.78-.54-1.2C13.057 1.056 11.933.416 10.51.416c-.013 0-.025.002-.037.002-.027-.037-.055-.074-.084-.11C9.611-.416 8.626-.222 7.733.147 6.84.516 6.022 1.25 5.577 2.246c-.709 1.587-.921 2.873-.89 3.908-1.798.562-3.065.956-3.128.976-.924.294-.946.318-1.065 1.184C.378 9.118 0 22.329 0 22.329l15.337 1.65zm-3.275-15.207c-.176.054-.361.109-.548.165-.012-1.027-.122-2.458-.575-3.67.948.228 1.007 2.543 1.123 3.505zm-1.784.552c-1.036.322-2.159.671-3.28 1.019.319-1.227.959-2.436 1.718-3.244.319-.339.74-.748 1.243-1.032.569 1.027.319 2.562.319 3.257zm-.893-5.444c.202 0 .396.021.581.063-.503.283-1.065.836-1.561 1.438-.864.942-1.621 2.426-1.997 3.857-1.035.322-2.046.637-2.972.925.385-3.643 2.608-6.24 5.949-6.283z"/>
-                  </svg>
+                  <Image
+                    src="/images/shopify.png"
+                    alt="Shopify"
+                    width={48}
+                    height={48}
+                    className="object-contain"
+                  />
                 </div>
                 <div className="mt-2 text-sm font-medium text-gray-900">Shopify</div>
               </button>
@@ -83,9 +88,13 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
                 disabled
               >
                 <div className="mx-auto h-12 w-12 flex items-center justify-center">
-                  <svg viewBox="0 0 24 24" className="h-10 w-10" fill="#7C3AED">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                  </svg>
+                  <Image
+                    src="/images/logo-yampi-smartenvios.webp"
+                    alt="Yampi"
+                    width={48}
+                    height={48}
+                    className="object-contain opacity-50"
+                  />
                 </div>
                 <div className="mt-2 text-sm font-medium text-gray-400">Yampi</div>
                 <div className="text-xs text-gray-500">Em breve</div>
