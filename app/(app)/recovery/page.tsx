@@ -1,7 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { RecoverySettingsForm } from '@/components/recovery/recovery-settings-form';
-import { RecoveryStats } from '@/components/recovery/recovery-stats';
+import { RecoveryTabs, TabPanel } from '@/components/recovery/recovery-tabs';
+import { RecoveryOverview } from '@/components/recovery/recovery-overview';
+import { RecoveryHistory } from '@/components/recovery/recovery-history';
 
 async function getSupabaseServer() {
   const cookieStore = cookies();
@@ -41,20 +43,41 @@ export default async function RecoveryPage() {
 
   const { data: stats } = await supabase
     .from('automated_actions')
-    .select('status, opened, clicked, converted, conversion_value')
-    .gte('created_at', thirtyDaysAgo.toISOString());
+    .select('status, opened, clicked, converted, conversion_value, created_at')
+    .eq('action_type', 'email_sent')
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .order('created_at', { ascending: false });
+
+  // Buscar histórico completo de emails enviados (últimos 30 dias)
+  const { data: emailHistory } = await supabase
+    .from('automated_actions')
+    .select('id, recipient, email_subject, status, sent_at, opened, opened_at, clicked, clicked_at, converted, converted_at, conversion_value')
+    .eq('action_type', 'email_sent')
+    .gte('created_at', thirtyDaysAgo.toISOString())
+    .order('created_at', { ascending: false });
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Recuperação de Vendas</h1>
         <p className="mt-1 text-sm text-gray-600">
-          Configure emails de recuperação de carrinho abandonado e acompanhe resultados
+          Configure emails de recuperação de carrinho abandonado e acompanhe resultados em tempo real
         </p>
       </div>
 
-      <RecoveryStats stats={stats || []} />
-      <RecoverySettingsForm user={user} profile={profile} />
+      <RecoveryTabs defaultTab="overview">
+        <TabPanel id="overview">
+          <RecoveryOverview stats={stats || []} />
+        </TabPanel>
+
+        <TabPanel id="history">
+          <RecoveryHistory actions={emailHistory || []} />
+        </TabPanel>
+
+        <TabPanel id="settings">
+          <RecoverySettingsForm user={user} profile={profile} />
+        </TabPanel>
+      </RecoveryTabs>
     </div>
   );
 }
