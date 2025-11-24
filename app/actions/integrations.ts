@@ -118,8 +118,21 @@ export async function addIntegration(formData: FormData) {
           return { error: 'Erro ao salvar integração no banco' };
         }
 
-        // TODO: Configurar webhooks automaticamente na Shopify
-        // Isso será implementado na próxima etapa
+        // Configurar webhooks automaticamente na Shopify
+        const { registerShopifyWebhooks } = await import('@/lib/shopify-webhooks');
+        const webhookResult = await registerShopifyWebhooks({
+          id: integration.id,
+          store_url: storeUrl,
+          api_key: accessToken,
+          webhook_secret: integration.webhook_secret,
+        });
+
+        if (!webhookResult.success) {
+          console.error('⚠️ Aviso: Erro ao configurar webhooks:', webhookResult.error);
+          // Não retorna erro, apenas avisa - a integração já foi criada
+        } else {
+          console.log('✅ Webhooks configurados:', webhookResult.webhooks?.length || 0);
+        }
 
         revalidatePath('/integrations');
         return { success: true, integration };
