@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { FacebookPixel } from '@/components/facebook-pixel';
 
 export const metadata: Metadata = {
   title: 'Sistema de Rastreamento GTX',
@@ -28,7 +29,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <FacebookPixel />
+        {children}
+      </body>
     </html>
   );
 }

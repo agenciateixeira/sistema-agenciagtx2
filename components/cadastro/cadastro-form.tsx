@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { trackCompleteRegistration } from '@/components/facebook-pixel';
 import { Loader2 } from 'lucide-react';
 
 export function CadastroForm() {
@@ -60,6 +61,9 @@ export function CadastroForm() {
 
       setStatus('success');
       setMessage('Conta criada com sucesso! Redirecionando...');
+
+      // Track Facebook Pixel conversion
+      trackCompleteRegistration();
 
       // Wait a bit longer for session to be saved in cookies
       await new Promise(resolve => setTimeout(resolve, 1000));

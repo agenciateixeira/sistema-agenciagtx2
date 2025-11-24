@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import Image from 'next/image';
 import { addIntegration } from '@/app/actions/integrations';
+import { trackLead } from '@/components/facebook-pixel';
 
 interface AddIntegrationModalProps {
   isOpen: boolean;
@@ -29,6 +30,9 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
       setError(result.error);
       setLoading(false);
     } else {
+      // Track Facebook Pixel Lead conversion
+      trackLead(`${platform} Integration Connected`);
+
       onClose();
       window.location.reload();
     }
