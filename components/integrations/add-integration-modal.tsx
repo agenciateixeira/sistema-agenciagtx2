@@ -125,6 +125,23 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
           {platform === 'shopify' && (
             <>
               <div>
+                <label htmlFor="store_name" className="block text-sm font-medium text-gray-700">
+                  Nome da integração
+                </label>
+                <input
+                  type="text"
+                  name="store_name"
+                  id="store_name"
+                  placeholder="Minha Loja Shopify"
+                  required
+                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Nome para identificar esta integração
+                </p>
+              </div>
+
+              <div>
                 <label htmlFor="store_url" className="block text-sm font-medium text-gray-700">
                   URL original da sua loja Shopify
                 </label>
@@ -142,19 +159,36 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
               </div>
 
               <div>
-                <label htmlFor="api_key" className="block text-sm font-medium text-gray-700">
+                <label htmlFor="access_token" className="block text-sm font-medium text-gray-700">
                   Token de acesso
                 </label>
                 <input
                   type="text"
-                  name="api_key"
-                  id="api_key"
+                  name="access_token"
+                  id="access_token"
                   placeholder="shpat_..."
                   required
                   className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Admin API access token (encontre em API credentials)
+                  Admin API access token
+                </p>
+              </div>
+
+              <div>
+                <label htmlFor="api_key" className="block text-sm font-medium text-gray-700">
+                  Chave de API
+                </label>
+                <input
+                  type="text"
+                  name="api_key"
+                  id="api_key"
+                  placeholder="a1b2c3d4e5f6..."
+                  required
+                  className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  API key (32 caracteres)
                 </p>
               </div>
 
@@ -171,7 +205,7 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
                   className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  API secret key (encontre em API credentials)
+                  API secret key (32 caracteres)
                 </p>
               </div>
             </>

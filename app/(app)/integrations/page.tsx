@@ -116,15 +116,13 @@ export default async function IntegrationsPage() {
                 <div className="mt-2 rounded-lg bg-gray-50 p-3">
                   <p className="text-xs font-semibold text-gray-700 uppercase">Scopes Necessários:</p>
                   <ul className="mt-2 ml-5 list-disc space-y-1 text-sm">
-                    <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">read_checkouts</code> - Ver carrinhos e checkouts</li>
-                    <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">read_orders</code> - Ver pedidos/vendas</li>
-                    <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">read_products</code> - Ver produtos</li>
+                    <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">read_orders</code> - Ver pedidos, vendas e carrinhos abandonados</li>
+                    <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">read_products</code> - Ver produtos do carrinho</li>
                     <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">read_customers</code> - Ver dados dos clientes</li>
-                    <li><code className="rounded bg-gray-200 px-1 py-0.5 text-xs">write_webhooks</code> - Configurar webhooks automaticamente</li>
                   </ul>
                 </div>
                 <p className="mt-2 text-xs text-gray-600">
-                  💡 Esses scopes permitem que o sistema monitore carrinhos, veja quando são abandonados e envie recuperações automáticas.
+                  💡 O scope <code>read_orders</code> inclui acesso aos checkouts abandonados (AbandonedCheckout). Webhooks são configurados automaticamente via API.
                 </p>
               </div>
 

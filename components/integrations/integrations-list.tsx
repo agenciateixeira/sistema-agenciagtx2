@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, XCircle, Trash2, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, RefreshCw, Edit } from 'lucide-react';
 import Image from 'next/image';
 import { deleteIntegration, testIntegration } from '@/app/actions/integrations';
+import { EditIntegrationModal } from './edit-integration-modal';
 
 interface Integration {
   id: string;
@@ -23,6 +24,7 @@ interface IntegrationsListProps {
 export function IntegrationsList({ integrations }: IntegrationsListProps) {
   const [testing, setTesting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
 
   async function handleTest(id: string) {
     setTesting(id);
@@ -150,6 +152,14 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
             </button>
 
             <button
+              onClick={() => setEditingIntegration(integration)}
+              className="rounded-lg p-2 text-blue-600 hover:bg-blue-50"
+              title="Editar integração"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+
+            <button
               onClick={() => handleDelete(integration.id, integration.store_name)}
               disabled={deleting === integration.id}
               className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
@@ -160,6 +170,14 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
           </div>
         </div>
       ))}
+
+      {editingIntegration && (
+        <EditIntegrationModal
+          integration={editingIntegration}
+          isOpen={!!editingIntegration}
+          onClose={() => setEditingIntegration(null)}
+        />
+      )}
     </div>
   );
 }

@@ -30,12 +30,14 @@ export async function addIntegration(formData: FormData) {
     }
 
     const platform = formData.get('platform') as string;
+    const storeName = formData.get('store_name') as string;
     const storeUrlInput = formData.get('store_url') as string;
+    const accessToken = formData.get('access_token') as string;
     const apiKey = formData.get('api_key') as string;
     const apiSecret = formData.get('api_secret') as string;
 
-    if (!platform || !storeUrlInput || !apiKey) {
-      return { error: 'Campos obrigatórios faltando' };
+    if (!platform || !storeName || !storeUrlInput || !accessToken || !apiKey || !apiSecret) {
+      return { error: 'Todos os campos são obrigatórios' };
     }
 
     // Validar conexão Shopify
@@ -53,21 +55,22 @@ export async function addIntegration(formData: FormData) {
       }
 
       const storeUrl = `https://${cleanUrl}`;
-      const storeName = cleanUrl.replace('.myshopify.com', '');
 
       console.log('🔍 DEBUG - Tentando conectar:', {
         input: storeUrlInput,
         cleanUrl,
         storeName,
         storeUrl,
+        accessToken: accessToken.substring(0, 10) + '...',
         apiKey: apiKey.substring(0, 10) + '...',
+        apiSecret: apiSecret.substring(0, 10) + '...',
       });
 
       // Testar conexão com Shopify Admin API
       try {
         const shopifyResponse = await fetch(`${storeUrl}/admin/api/2024-10/shop.json`, {
           headers: {
-            'X-Shopify-Access-Token': apiKey,
+            'X-Shopify-Access-Token': accessToken,
             'Content-Type': 'application/json',
           },
         });
@@ -95,8 +98,8 @@ export async function addIntegration(formData: FormData) {
             platform,
             store_name: storeName,
             store_url: storeUrl,
-            api_key: apiKey,
-            api_secret: apiSecret || null,
+            api_key: accessToken, // Token de acesso (usado nas requisições)
+            api_secret: apiSecret,
             webhook_secret: crypto.randomUUID(), // Gerar secret para validar webhooks
             status: 'active',
             last_sync_at: new Date().toISOString(),
@@ -104,6 +107,7 @@ export async function addIntegration(formData: FormData) {
               shop_name: shopData.shop?.name,
               shop_email: shopData.shop?.email,
               shop_currency: shopData.shop?.currency,
+              api_key_normal: apiKey, // API Key normal (32 caracteres)
             },
           })
           .select()
@@ -128,6 +132,85 @@ export async function addIntegration(formData: FormData) {
     return { error: 'Plataforma não suportada ainda' };
   } catch (error: any) {
     console.error('Erro em addIntegration:', error);
+    return { error: error.message || 'Erro desconhecido' };
+  }
+}
+
+export async function updateIntegration(integrationId: string, formData: FormData) {
+  try {
+    const supabase = await getSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: 'Não autenticado' };
+    }
+
+    const storeName = formData.get('store_name') as string;
+    const storeUrlInput = formData.get('store_url') as string;
+    const accessToken = formData.get('access_token') as string;
+    const apiKey = formData.get('api_key') as string;
+    const apiSecret = formData.get('api_secret') as string;
+
+    if (!storeName || !storeUrlInput || !accessToken || !apiKey || !apiSecret) {
+      return { error: 'Todos os campos são obrigatórios' };
+    }
+
+    // Limpar URL
+    let cleanUrl = storeUrlInput
+      .trim()
+      .replace(/^https?:\/\//, '')
+      .replace(/^www\./, '')
+      .replace(/\/$/, '');
+
+    if (!cleanUrl.includes('.myshopify.com')) {
+      cleanUrl = `${cleanUrl}.myshopify.com`;
+    }
+
+    const storeUrl = `https://${cleanUrl}`;
+
+    // Testar credenciais primeiro
+    const shopifyResponse = await fetch(`${storeUrl}/admin/api/2024-10/shop.json`, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!shopifyResponse.ok) {
+      return { error: 'Credenciais inválidas. Verifique o token de acesso.' };
+    }
+
+    const shopData = await shopifyResponse.json();
+
+    // Atualizar integração
+    const { error: updateError } = await supabase
+      .from('integrations')
+      .update({
+        store_name: storeName,
+        store_url: storeUrl,
+        api_key: accessToken,
+        api_secret: apiSecret,
+        status: 'active',
+        error_message: null,
+        last_sync_at: new Date().toISOString(),
+        settings: {
+          shop_name: shopData.shop?.name,
+          shop_email: shopData.shop?.email,
+          shop_currency: shopData.shop?.currency,
+          api_key_normal: apiKey,
+        },
+      })
+      .eq('id', integrationId);
+
+    if (updateError) {
+      console.error('Erro ao atualizar integração:', updateError);
+      return { error: 'Erro ao atualizar integração' };
+    }
+
+    revalidatePath('/integrations');
+    return { success: true };
+  } catch (error: any) {
+    console.error('Erro em updateIntegration:', error);
     return { error: error.message || 'Erro desconhecido' };
   }
 }
