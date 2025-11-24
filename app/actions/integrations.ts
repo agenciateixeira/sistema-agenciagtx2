@@ -40,11 +40,19 @@ export async function addIntegration(formData: FormData) {
 
     // Validar conexão Shopify
     if (platform === 'shopify') {
-      const storeUrl = `https://${storeName}.myshopify.com`;
+      // Remove .myshopify.com se usuário incluiu por engano
+      const cleanStoreName = storeName.replace('.myshopify.com', '').trim();
+      const storeUrl = `https://${cleanStoreName}.myshopify.com`;
+
+      console.log('🔍 DEBUG - Tentando conectar:', {
+        storeName: cleanStoreName,
+        storeUrl,
+        apiKey: apiKey.substring(0, 10) + '...',
+      });
 
       // Testar conexão com Shopify Admin API
       try {
-        const shopifyResponse = await fetch(`${storeUrl}/admin/api/2025-10/shop.json`, {
+        const shopifyResponse = await fetch(`${storeUrl}/admin/api/2024-10/shop.json`, {
           headers: {
             'X-Shopify-Access-Token': apiKey,
             'Content-Type': 'application/json',
@@ -162,7 +170,7 @@ export async function testIntegration(integrationId: string) {
     // Testar conexão com Shopify
     if (integration.platform === 'shopify') {
       try {
-        const shopifyResponse = await fetch(`${integration.store_url}/admin/api/2025-10/shop.json`, {
+        const shopifyResponse = await fetch(`${integration.store_url}/admin/api/2024-10/shop.json`, {
           headers: {
             'X-Shopify-Access-Token': integration.api_key,
             'Content-Type': 'application/json',
