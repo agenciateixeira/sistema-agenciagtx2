@@ -16,11 +16,16 @@ const supabase = createClient(
  */
 export async function GET(request: NextRequest) {
   try {
-    // Validar autorização (opcional - para proteger o endpoint)
+    // Validar autorização - aceita tanto Vercel Cron quanto CRON_SECRET
     const authHeader = request.headers.get('authorization');
+    const vercelCronHeader = request.headers.get('x-vercel-cron');
     const expectedAuth = `Bearer ${process.env.CRON_SECRET || 'dev-secret'}`;
 
-    if (authHeader !== expectedAuth) {
+    // Aceitar se vier do Vercel Cron OU com CRON_SECRET válido
+    const isVercelCron = vercelCronHeader === '1' || vercelCronHeader === 'true';
+    const isValidAuth = authHeader === expectedAuth;
+
+    if (!isVercelCron && !isValidAuth) {
       console.warn('⚠️ Tentativa de acesso não autorizado ao job');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
