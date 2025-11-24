@@ -16,6 +16,8 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [name, setName] = useState(profile?.nome || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [uploading, setUploading] = useState(false);
 
   async function handleUpdateProfile(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,6 +46,77 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
       setStatus('error');
       setMessage(`Erro ao atualizar perfil: ${error.message || 'Erro desconhecido'}`);
       console.error('Erro completo:', error);
+    }
+  }
+
+  async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      setStatus('error');
+      setMessage('Formato inválido. Use: JPG, PNG, GIF ou WebP');
+      return;
+    }
+
+    // Validar tamanho (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setStatus('error');
+      setMessage('Arquivo muito grande. Máximo: 2MB');
+      return;
+    }
+
+    setUploading(true);
+    setStatus('idle');
+    setMessage('');
+
+    try {
+      const supabase = getSupabaseBrowserClient();
+
+      // Criar nome único para o arquivo
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Fazer upload
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        console.error('Erro no upload:', uploadError);
+        throw uploadError;
+      }
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Atualizar perfil com nova URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar perfil:', updateError);
+        throw updateError;
+      }
+
+      setAvatarUrl(publicUrl);
+      setStatus('success');
+      setMessage('Foto atualizada com sucesso!');
+
+      // Recarregar página após 1 segundo
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error: any) {
+      setStatus('error');
+      setMessage(`Erro ao fazer upload: ${error.message || 'Erro desconhecido'}`);
+      console.error('Erro completo:', error);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -94,10 +167,10 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
         <div className="mt-6 flex flex-col gap-6 lg:flex-row">
           <div className="flex flex-col items-center gap-4 rounded-lg border border-gray-200 bg-gray-50 p-6">
             <div className="relative flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-2 border-gray-300 bg-brand-100">
-              {profile?.avatar_url ? (
+              {avatarUrl ? (
                 <Image
-                  src={profile.avatar_url}
-                  alt={profile.nome || 'Usuário'}
+                  src={avatarUrl}
+                  alt={profile?.nome || 'Usuário'}
                   fill
                   className="object-cover"
                 />
@@ -109,9 +182,22 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
               <p className="font-semibold text-gray-900">{profile?.nome || 'Usuário'}</p>
               <p className="text-sm text-gray-600">{user.email}</p>
             </div>
-            <button className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <input
+              type="file"
+              id="avatar-upload"
+              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+              onChange={handleAvatarUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+            <button
+              type="button"
+              onClick={() => document.getElementById('avatar-upload')?.click()}
+              disabled={uploading}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Upload className="h-4 w-4" />
-              Alterar foto
+              {uploading ? 'Enviando...' : 'Alterar foto'}
             </button>
           </div>
 
