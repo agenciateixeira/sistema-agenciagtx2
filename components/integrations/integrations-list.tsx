@@ -15,6 +15,9 @@ interface Integration {
   last_sync_at: string | null;
   error_message: string | null;
   created_at: string;
+  api_key: string;
+  api_secret: string | null;
+  settings: any;
 }
 
 interface IntegrationsListProps {
