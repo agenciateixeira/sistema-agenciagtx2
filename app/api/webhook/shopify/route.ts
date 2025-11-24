@@ -57,15 +57,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Integration not found' }, { status: 404 });
     }
 
-    // Validar HMAC
-    const isValid = validateShopifyWebhook(bodyText, hmacHeader, integration.webhook_secret);
+    // Validar HMAC (pode ser desabilitado para testes)
+    const skipHmacValidation = process.env.SKIP_WEBHOOK_HMAC_VALIDATION === 'true';
 
-    if (!isValid) {
-      console.error('❌ HMAC inválido para:', shopDomain);
-      return NextResponse.json({ error: 'Invalid HMAC signature' }, { status: 401 });
+    if (!skipHmacValidation) {
+      const isValid = validateShopifyWebhook(bodyText, hmacHeader, integration.webhook_secret);
+
+      if (!isValid) {
+        console.error('❌ HMAC inválido para:', shopDomain);
+        console.error('💡 Dica: Adicione SKIP_WEBHOOK_HMAC_VALIDATION=true nas env vars para desabilitar temporariamente');
+        return NextResponse.json({ error: 'Invalid HMAC signature' }, { status: 401 });
+      }
+
+      console.log('✅ HMAC válido');
+    } else {
+      console.warn('⚠️ HMAC validation DESABILITADA - apenas para testes!');
     }
-
-    console.log('✅ HMAC válido');
 
     // Parse do body
     const eventData = JSON.parse(bodyText);
