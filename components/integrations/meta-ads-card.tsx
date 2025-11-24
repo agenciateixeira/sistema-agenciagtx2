@@ -194,6 +194,74 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
           <li>• Dashboard unificado com tudo em um lugar</li>
         </ul>
       </div>
+
+      {/* Como usamos a API */}
+      <details className="mt-4 rounded-lg border border-gray-200 bg-white">
+        <summary className="cursor-pointer p-4 font-medium text-gray-900 hover:bg-gray-50">
+          🔐 Como usamos sua API da Meta?
+        </summary>
+        <div className="space-y-4 border-t border-gray-200 p-4 text-sm text-gray-700">
+          <div>
+            <p className="font-semibold text-gray-900 mb-2">📊 Dados que coletamos (somente leitura):</p>
+            <ul className="ml-5 list-disc space-y-1 text-xs">
+              <li><strong>Métricas de Campanhas:</strong> Gasto, impressões, cliques, CPC, CTR, ROAS</li>
+              <li><strong>Informações de Contas:</strong> Nome das campanhas, ad sets e anúncios</li>
+              <li><strong>Resultados:</strong> Conversões e valores de conversão (quando configurado)</li>
+              <li><strong>Períodos:</strong> Dados históricos para comparativos e relatórios</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900 mb-2">🎯 Como usamos esses dados:</p>
+            <ul className="ml-5 list-disc space-y-1 text-xs">
+              <li><strong>Dashboard Unificado:</strong> Mostramos todas suas métricas em um só lugar</li>
+              <li><strong>Cálculo de ROI:</strong> Cruzamos gasto em ads com receita recuperada de carrinhos</li>
+              <li><strong>Rastreamento de Origem:</strong> Identificamos quais campanhas geram mais carrinhos abandonados</li>
+              <li><strong>Alertas Inteligentes:</strong> Notificamos quando CPC sobe, ROAS cai ou abandono aumenta</li>
+              <li><strong>Relatórios:</strong> Geramos relatórios PDF/Excel com análise completa</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900 mb-2">🔒 Segurança e Privacidade:</p>
+            <ul className="ml-5 list-disc space-y-1 text-xs">
+              <li><strong>Tokens Criptografados:</strong> Seu token de acesso é guardado com criptografia AES-256-GCM</li>
+              <li><strong>Somente Leitura:</strong> NUNCA modificamos, pausamos ou editamos seus anúncios</li>
+              <li><strong>Multi-tenant Isolado:</strong> Seus dados não são compartilhados com outros usuários</li>
+              <li><strong>GDPR Compliant:</strong> Você pode desconectar e deletar todos dados a qualquer momento</li>
+              <li><strong>Sincronização Diária:</strong> Buscamos dados 1x por dia (não sobrecarrega sua conta)</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="font-semibold text-gray-900 mb-2">🔄 Exemplo de Fluxo:</p>
+            <ol className="ml-5 list-decimal space-y-1 text-xs">
+              <li>Cliente vê seu anúncio no Facebook/Instagram</li>
+              <li>Clica e vai para sua loja (capturamos utm_source=facebook)</li>
+              <li>Adiciona produtos mas abandona o carrinho</li>
+              <li>Nosso sistema envia email de recuperação</li>
+              <li>Cliente abre email, clica e finaliza compra</li>
+              <li><strong>Você vê:</strong> "Campanha X → 1 carrinho → 1 venda recuperada → ROI +150%"</li>
+            </ol>
+          </div>
+
+          <div className="rounded-lg bg-green-50 p-3 border border-green-200">
+            <p className="text-xs text-green-900">
+              <strong>✅ Garantia:</strong> Suas credenciais ficam 100% no seu controle.
+              Você pode revogar acesso a qualquer momento pelo{' '}
+              <a
+                href="https://www.facebook.com/settings?tab=business_tools"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline font-semibold hover:text-green-700"
+              >
+                Facebook Business Settings
+              </a>
+              .
+            </p>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
