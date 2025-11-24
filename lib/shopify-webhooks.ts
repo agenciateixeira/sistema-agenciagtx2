@@ -43,7 +43,7 @@ export async function registerShopifyWebhooks(integration: Integration): Promise
       };
 
       const response = await fetch(
-        `${integration.store_url}/admin/api/2024-01/webhooks.json`,
+        `${integration.store_url}/admin/api/2025-10/webhooks.json`,
         {
           method: 'POST',
           headers: {
@@ -98,7 +98,7 @@ export async function listShopifyWebhooks(integration: Integration): Promise<{
 }> {
   try {
     const response = await fetch(
-      `${integration.store_url}/admin/api/2024-01/webhooks.json`,
+      `${integration.store_url}/admin/api/2025-10/webhooks.json`,
       {
         method: 'GET',
         headers: {
@@ -153,7 +153,7 @@ export async function cleanupOldWebhooks(integration: Integration): Promise<{
         // Mantém apenas os webhooks dos topics que usamos
         if (!WEBHOOK_TOPICS.includes(webhook.topic)) {
           await fetch(
-            `${integration.store_url}/admin/api/2024-01/webhooks/${webhook.id}.json`,
+            `${integration.store_url}/admin/api/2025-10/webhooks/${webhook.id}.json`,
             {
               method: 'DELETE',
               headers: {

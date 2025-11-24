@@ -8,11 +8,11 @@ Segundo a [documentação oficial da Shopify](https://shopify.dev/docs/api/usage
 
 | Scope | Permissão | Para que serve |
 |-------|-----------|----------------|
-| `read_checkouts` | Ler checkouts | Detectar carrinhos criados e abandonados |
-| `read_orders` | Ler pedidos | Ver quando um carrinho abandonado converteu em venda |
+| `read_orders` | Ler pedidos | Acessa **pedidos E checkouts abandonados** (AbandonedCheckout) |
 | `read_products` | Ler produtos | Mostrar quais produtos estão no carrinho |
 | `read_customers` | Ler clientes | Obter email/nome do cliente para enviar recuperação |
-| `write_webhooks` | Criar webhooks | Configurar webhooks automaticamente via API |
+
+> 💡 **Nota:** `read_orders` dá acesso aos objetos Order, AbandonedCheckout, Fulfillment e OrderTransaction. Webhooks são configurados automaticamente via API sem scope específico.
 
 ### Scopes Opcionais (Futuro):
 
@@ -26,7 +26,7 @@ Segundo a [documentação oficial da Shopify](https://shopify.dev/docs/api/usage
 
 ## 🔄 Webhooks que Vamos Usar
 
-Segundo a [documentação de webhooks da Shopify](https://shopify.dev/docs/api/admin-rest/2024-01/resources/webhook):
+Segundo a [documentação de webhooks da Shopify](https://shopify.dev/docs/api/admin-rest/2025-10/resources/webhook):
 
 ### Webhooks Essenciais:
 
@@ -75,7 +75,7 @@ Quando listarmos no Shopify App Store:
 ### 1. Testar Conexão Shopify
 
 ```typescript
-// GET https://{store}.myshopify.com/admin/api/2024-01/shop.json
+// GET https://{store}.myshopify.com/admin/api/2025-10/shop.json
 // Headers:
 {
   'X-Shopify-Access-Token': 'shpat_...',
@@ -97,7 +97,7 @@ Quando listarmos no Shopify App Store:
 ### 2. Configurar Webhooks Automaticamente
 
 ```typescript
-// POST https://{store}.myshopify.com/admin/api/2024-01/webhooks.json
+// POST https://{store}.myshopify.com/admin/api/2025-10/webhooks.json
 // Headers: X-Shopify-Access-Token
 // Body:
 {
@@ -205,10 +205,10 @@ if (hash !== hmac) {
 ## 📚 Documentação Útil
 
 - **Access Scopes:** https://shopify.dev/docs/api/usage/access-scopes
-- **Webhooks:** https://shopify.dev/docs/api/admin-rest/2024-01/resources/webhook
+- **Webhooks:** https://shopify.dev/docs/api/admin-rest/2025-10/resources/webhook
 - **Admin API:** https://shopify.dev/docs/api/admin-rest
-- **Checkouts:** https://shopify.dev/docs/api/admin-rest/2024-01/resources/checkout
-- **Orders:** https://shopify.dev/docs/api/admin-rest/2024-01/resources/order
+- **Checkouts:** https://shopify.dev/docs/api/admin-rest/2025-10/resources/abandoned-checkouts
+- **Orders:** https://shopify.dev/docs/api/admin-rest/2025-10/resources/order
 
 ---
 

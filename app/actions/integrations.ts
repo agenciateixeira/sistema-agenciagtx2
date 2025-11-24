@@ -44,7 +44,7 @@ export async function addIntegration(formData: FormData) {
 
       // Testar conexão com Shopify Admin API
       try {
-        const shopifyResponse = await fetch(`${storeUrl}/admin/api/2024-01/shop.json`, {
+        const shopifyResponse = await fetch(`${storeUrl}/admin/api/2025-10/shop.json`, {
           headers: {
             'X-Shopify-Access-Token': apiKey,
             'Content-Type': 'application/json',
@@ -52,7 +52,16 @@ export async function addIntegration(formData: FormData) {
         });
 
         if (!shopifyResponse.ok) {
-          return { error: 'Credenciais inválidas. Verifique o token de acesso.' };
+          const errorText = await shopifyResponse.text();
+          console.error('Shopify API Error:', {
+            status: shopifyResponse.status,
+            statusText: shopifyResponse.statusText,
+            error: errorText,
+            storeUrl,
+          });
+          return {
+            error: `Erro ao conectar: ${shopifyResponse.status} - ${shopifyResponse.statusText}. Verifique suas credenciais.`
+          };
         }
 
         const shopData = await shopifyResponse.json();
@@ -153,7 +162,7 @@ export async function testIntegration(integrationId: string) {
     // Testar conexão com Shopify
     if (integration.platform === 'shopify') {
       try {
-        const shopifyResponse = await fetch(`${integration.store_url}/admin/api/2024-01/shop.json`, {
+        const shopifyResponse = await fetch(`${integration.store_url}/admin/api/2025-10/shop.json`, {
           headers: {
             'X-Shopify-Access-Token': integration.api_key,
             'Content-Type': 'application/json',

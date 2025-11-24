@@ -63,15 +63,15 @@ Após conectar sua loja Shopify ao GTX Analytics, você terá:
 
 | Scope | Nome na Interface | Para que serve |
 |-------|-------------------|----------------|
-| ✅ `read_checkouts` | **Checkouts** → Read | Ver carrinhos e checkouts criados |
-| ✅ `read_orders` | **Orders** → Read | Ver quando o carrinho vira venda |
-| ✅ `read_products` | **Products** → Read | Ver quais produtos estão no carrinho |
-| ✅ `read_customers` | **Customers** → Read | Ver email do cliente para enviar recuperação |
-| ✅ `write_webhooks` | **Webhooks** → Write | Configurar notificações automáticas |
+| ✅ `read_orders` | **Orders** → Read access | Ver pedidos e **carrinhos abandonados** (AbandonedCheckout) |
+| ✅ `read_products` | **Products** → Read access | Ver quais produtos estão no carrinho |
+| ✅ `read_customers` | **Customers** → Read access | Ver email do cliente para enviar recuperação |
 
 4. Clique em **Save**
 
-> ⚠️ **ATENÇÃO:** Marque **APENAS** os scopes listados acima. Não precisa marcar "write" em orders, products ou customers.
+> ⚠️ **ATENÇÃO:** Marque **APENAS** os 3 scopes listados acima. Não precisa marcar "write" em nenhum deles.
+>
+> 💡 **Nota:** Os webhooks serão configurados automaticamente pelo nosso sistema após a conexão.
 
 ![Configurar Scopes](https://via.placeholder.com/600x300.png?text=Screenshot:+Configure+Scopes)
 
@@ -185,12 +185,10 @@ Após conectar sua loja Shopify ao GTX Analytics, você terá:
 
 **Solução:**
 1. Shopify → Apps → GTX Analytics → Configuration
-2. Verifique se TODOS os 5 scopes estão marcados:
-   - read_checkouts ✅
-   - read_orders ✅
+2. Verifique se TODOS os 3 scopes estão marcados:
+   - read_orders ✅ (inclui acesso a carrinhos abandonados)
    - read_products ✅
    - read_customers ✅
-   - write_webhooks ✅
 3. Save → Reinstall app
 
 ---
@@ -237,7 +235,7 @@ Precisa de ajuda?
 Antes de terminar, confirme:
 
 - [ ] App "GTX Analytics" criado na Shopify
-- [ ] 5 scopes configurados corretamente
+- [ ] 3 scopes configurados corretamente (read_orders, read_products, read_customers)
 - [ ] App instalado (botão verde clicado)
 - [ ] Token e Secret copiados
 - [ ] Integração conectada no GTX Analytics
