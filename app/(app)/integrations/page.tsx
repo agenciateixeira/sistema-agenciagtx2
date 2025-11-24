@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { SectionTitle } from '@/components/dashboard/section-title';
 import { IntegrationsList } from '@/components/integrations/integrations-list';
 import { AddIntegrationButton } from '@/components/integrations/add-integration-button';
+import { MetaAdsCard } from '@/components/integrations/meta-ads-card';
 
 async function getSupabaseServer() {
   const cookieStore = cookies();
@@ -30,7 +31,7 @@ export default async function IntegrationsPage() {
     redirect('/login');
   }
 
-  // Buscar integrações do usuário
+  // Buscar integrações do usuário (Shopify, Yampi, etc)
   const { data: integrations, error } = await supabase
     .from('integrations')
     .select('*')
@@ -41,6 +42,13 @@ export default async function IntegrationsPage() {
     console.error('Erro ao buscar integrações:', error);
   }
 
+  // Buscar conexão Meta Ads do usuário
+  const { data: metaConnection } = await supabase
+    .from('meta_connections')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -48,44 +56,51 @@ export default async function IntegrationsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Integrações</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Conecte sua loja Shopify, Yampi ou WooCommerce
+            Conecte sua loja e conta de anúncios para análises completas
           </p>
         </div>
         <AddIntegrationButton />
       </div>
 
-      {/* Status Card */}
-      {integrations && integrations.length === 0 && (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100">
-            <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h3 className="mt-4 text-lg font-semibold text-gray-900">
-            Nenhuma integração configurada
-          </h3>
-          <p className="mt-2 text-sm text-gray-600">
-            Conecte sua primeira loja para começar a recuperar vendas automaticamente
-          </p>
-          <div className="mt-6">
-            <AddIntegrationButton />
-          </div>
-        </div>
-      )}
+      {/* Meta Ads Section */}
+      <div className="space-y-4">
+        <SectionTitle
+          title="📊 Meta Ads (Facebook/Instagram)"
+          description="Conecte sua conta de anúncios e veja ROI completo"
+        />
+        <MetaAdsCard connection={metaConnection} />
+      </div>
 
-      {/* Lista de Integrações */}
-      {integrations && integrations.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <SectionTitle
-            title="Suas Integrações"
-            description="Lojas conectadas ao sistema"
-          />
-          <div className="mt-6">
+      {/* Lista de Integrações E-commerce */}
+      <div className="space-y-4">
+        <SectionTitle
+          title="🛒 E-commerce (Shopify, Yampi, WooCommerce)"
+          description="Conecte sua loja para recuperação de carrinhos"
+        />
+
+        {integrations && integrations.length > 0 ? (
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
             <IntegrationsList integrations={integrations} />
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-8 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-100">
+              <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-gray-900">
+              Nenhuma loja conectada
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Conecte sua loja para começar a recuperar vendas automaticamente
+            </p>
+            <div className="mt-4">
+              <AddIntegrationButton />
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Guia de Configuração */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
