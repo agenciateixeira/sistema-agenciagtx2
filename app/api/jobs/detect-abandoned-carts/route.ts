@@ -32,16 +32,16 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Iniciando job de detecção de carrinhos abandonados...');
 
-    // Calcular timestamp de 15 minutos atrás
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    // Calcular timestamp de 30 minutos atrás
+    const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000).toISOString();
 
-    // Buscar checkout events não processados criados há mais de 15min
+    // Buscar checkout events não processados criados há mais de 30min
     const { data: abandonedCheckouts, error: fetchError } = await supabase
       .from('webhook_events')
       .select('*')
       .in('event_type', ['checkout_created', 'checkout_updated'])
       .eq('processed', false)
-      .lt('created_at', fifteenMinutesAgo)
+      .lt('created_at', thirtyMinutesAgo)
       .not('customer_email', 'is', null)
       .not('checkout_url', 'is', null);
 
