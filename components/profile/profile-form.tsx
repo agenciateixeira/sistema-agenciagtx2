@@ -29,7 +29,7 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
 
       const { error } = await supabase
         .from('profiles')
-        .update({ nome: name, updated_at: new Date().toISOString() })
+        .update({ nome: name })
         .eq('id', user.id);
 
       if (error) {
@@ -97,7 +97,7 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
       // Atualizar perfil com nova URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+        .update({ avatar_url: publicUrl })
         .eq('id', user.id);
 
       if (updateError) {
