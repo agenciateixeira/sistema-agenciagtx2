@@ -30,13 +30,20 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
         .update({ nome: name, updated_at: new Date().toISOString() })
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro detalhado ao atualizar perfil:', error);
+        throw error;
+      }
 
       setStatus('success');
       setMessage('Perfil atualizado com sucesso!');
-    } catch (error) {
+
+      // Recarregar a página após 1 segundo para refletir mudanças no topbar
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error: any) {
       setStatus('error');
-      setMessage('Erro ao atualizar perfil.');
+      setMessage(`Erro ao atualizar perfil: ${error.message || 'Erro desconhecido'}`);
+      console.error('Erro completo:', error);
     }
   }
 

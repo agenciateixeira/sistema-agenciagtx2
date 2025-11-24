@@ -32,8 +32,8 @@ export default async function DashboardPage() {
 
   // Buscar perfil do usuário
   const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
+    .from('profiles_with_email')
+    .select('id, nome, role, email, avatar_url')
     .eq('id', user.id)
     .single();
 
