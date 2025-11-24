@@ -1,11 +1,5 @@
 {
   "buildCommand": "npm run build",
-  "crons": [
-    {
-      "path": "/api/jobs/detect-abandoned-carts",
-      "schedule": "*/5 * * * *"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
