@@ -4,8 +4,6 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
-// Integration actions for Shopify, Yampi, WooCommerce
-
 async function getSupabaseServer() {
   const cookieStore = cookies();
 
@@ -86,21 +84,8 @@ export async function addIntegration(formData: FormData) {
           return { error: 'Erro ao salvar integração no banco' };
         }
 
-        // Configurar webhooks automaticamente
-        const { registerShopifyWebhooks } = await import('@/lib/shopify-webhooks');
-        const webhookResult = await registerShopifyWebhooks({
-          id: integration.id,
-          store_url: storeUrl,
-          api_key: apiKey,
-          webhook_secret: integration.webhook_secret,
-        });
-
-        if (!webhookResult.success) {
-          console.warn('Aviso: Webhooks não configurados:', webhookResult.error);
-          // Não falha a integração, apenas loga o aviso
-        } else {
-          console.log(`✅ ${webhookResult.webhooks?.length || 0} webhooks configurados`);
-        }
+        // TODO: Configurar webhooks automaticamente na Shopify
+        // Isso será implementado na próxima etapa
 
         revalidatePath('/integrations');
         return { success: true, integration };
