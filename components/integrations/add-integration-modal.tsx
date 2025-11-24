@@ -125,25 +125,25 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
           {platform === 'shopify' && (
             <>
               <div>
-                <label htmlFor="store_name" className="block text-sm font-medium text-gray-700">
-                  Nome da Loja
+                <label htmlFor="store_url" className="block text-sm font-medium text-gray-700">
+                  URL original da sua loja Shopify
                 </label>
                 <input
                   type="text"
-                  name="store_name"
-                  id="store_name"
-                  placeholder="minha-loja"
+                  name="store_url"
+                  id="store_url"
+                  placeholder="sua-loja.myshopify.com"
                   required
                   className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Apenas o nome (ex: se sua loja é minha-loja.myshopify.com, digite apenas "minha-loja")
+                  Exemplo: sua-loja.myshopify.com (não inclua https://)
                 </p>
               </div>
 
               <div>
                 <label htmlFor="api_key" className="block text-sm font-medium text-gray-700">
-                  Admin API Access Token
+                  Token de acesso
                 </label>
                 <input
                   type="text"
@@ -154,13 +154,13 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
                   className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Encontre em: API credentials → Admin API access token
+                  Admin API access token (encontre em API credentials)
                 </p>
               </div>
 
               <div>
                 <label htmlFor="api_secret" className="block text-sm font-medium text-gray-700">
-                  API Secret Key
+                  Chave secreta da API
                 </label>
                 <input
                   type="password"
@@ -171,7 +171,7 @@ export function AddIntegrationModal({ isOpen, onClose }: AddIntegrationModalProp
                   className="mt-1.5 w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
                 />
                 <p className="mt-1 text-xs text-gray-500">
-                  Encontre em: API credentials → API secret key
+                  API secret key (encontre em API credentials)
                 </p>
               </div>
             </>

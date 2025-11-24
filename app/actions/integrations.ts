@@ -30,22 +30,35 @@ export async function addIntegration(formData: FormData) {
     }
 
     const platform = formData.get('platform') as string;
-    const storeName = formData.get('store_name') as string;
+    const storeUrlInput = formData.get('store_url') as string;
     const apiKey = formData.get('api_key') as string;
     const apiSecret = formData.get('api_secret') as string;
 
-    if (!platform || !storeName || !apiKey) {
+    if (!platform || !storeUrlInput || !apiKey) {
       return { error: 'Campos obrigatórios faltando' };
     }
 
     // Validar conexão Shopify
     if (platform === 'shopify') {
-      // Remove .myshopify.com se usuário incluiu por engano
-      const cleanStoreName = storeName.replace('.myshopify.com', '').trim();
-      const storeUrl = `https://${cleanStoreName}.myshopify.com`;
+      // Limpar URL: remove https://, http://, www., espaços e barras
+      let cleanUrl = storeUrlInput
+        .trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/$/, '');
+
+      // Adicionar .myshopify.com se não tiver
+      if (!cleanUrl.includes('.myshopify.com')) {
+        cleanUrl = `${cleanUrl}.myshopify.com`;
+      }
+
+      const storeUrl = `https://${cleanUrl}`;
+      const storeName = cleanUrl.replace('.myshopify.com', '');
 
       console.log('🔍 DEBUG - Tentando conectar:', {
-        storeName: cleanStoreName,
+        input: storeUrlInput,
+        cleanUrl,
+        storeName,
         storeUrl,
         apiKey: apiKey.substring(0, 10) + '...',
       });

@@ -109,20 +109,23 @@ Após conectar sua loja Shopify ao GTX Analytics, você terá:
 4. Selecione **Shopify**
 5. Preencha os campos:
 
-   **Nome da Loja:**
+   **URL original da sua loja Shopify:**
    ```
-   Digite apenas o nome (ex: se sua loja é minha-loja.myshopify.com, digite apenas "minha-loja")
+   sua-loja.myshopify.com
    ```
+   (Cole a URL completa, sem https://)
 
-   **Admin API Access Token:**
+   **Token de acesso:**
    ```
-   Cole o token que começa com shpat_...
+   shpat_...
    ```
+   (Admin API access token)
 
-   **API Secret Key:**
+   **Chave secreta da API:**
    ```
-   Cole o secret que você copiou
+   shpss_...
    ```
+   (API secret key)
 
 6. Clique em **Conectar**
 
