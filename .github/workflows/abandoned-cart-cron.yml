@@ -1,0 +1,31 @@
+name: Abandoned Cart Detection
+
+on:
+  schedule:
+    # Roda a cada 5 minutos
+    - cron: '*/5 * * * *'
+  # Permite execução manual para testes
+  workflow_dispatch:
+
+jobs:
+  detect-abandoned-carts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call abandoned cart detection endpoint
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X GET "${{ secrets.APP_URL }}/api/jobs/detect-abandoned-carts" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "📊 Response Status: $http_code"
+          echo "📄 Response Body: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Error: HTTP $http_code"
+            exit 1
+          fi
+
+          echo "✅ Abandoned cart detection completed successfully"
