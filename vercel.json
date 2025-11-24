@@ -5,5 +5,16 @@
       "path": "/api/jobs/detect-abandoned-carts",
       "schedule": "*/5 * * * *"
     }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "X-Powered-By",
+          "value": "GTX Sistema"
+        }
+      ]
+    }
   ]
 }
