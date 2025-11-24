@@ -55,9 +55,14 @@ export default async function DashboardPage() {
     .eq('teamId', user.id)
     .eq('active', true);
 
-  const { count: membersCount } = await supabase
-    .from('profiles')
+  // Contar membros visíveis (com RLS)
+  const { count: membersCount, error: membersError } = await supabase
+    .from('profiles_with_email')
     .select('*', { count: 'exact', head: true });
+
+  if (membersError) {
+    console.error('Erro ao contar membros:', membersError);
+  }
 
   // Buscar notificações recentes
   const { data: recentNotifications } = await supabase
