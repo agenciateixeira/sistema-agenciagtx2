@@ -20,6 +20,7 @@ export interface AbandonedCartEmailData {
   logoUrl?: string;
   customMessage?: string;
   senderName?: string;
+  actionId?: string; // Para tracking de emails
 }
 
 export function getAbandonedCartEmailSubject(data: AbandonedCartEmailData): string {
@@ -53,6 +54,13 @@ export function getAbandonedCartEmailHTML(data: AbandonedCartEmailData): string 
     ? `<img src="${data.logoUrl}" alt="${data.storeName}" style="max-width: 180px; height: auto; margin-bottom: 20px;" />`
     : '';
   const currentYear = new Date().getFullYear();
+
+  // URLs de tracking
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://sistema-agenciagtx2.vercel.app';
+  const trackingPixelUrl = data.actionId ? `${appUrl}/api/track/open/${data.actionId}` : '';
+  const trackingClickUrl = data.actionId
+    ? `${appUrl}/api/track/click/${data.actionId}?url=${encodeURIComponent(data.checkoutUrl)}`
+    : data.checkoutUrl;
 
   return `
 <!DOCTYPE html>
@@ -111,7 +119,7 @@ export function getAbandonedCartEmailHTML(data: AbandonedCartEmailData): string 
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
-                    <a href="${data.checkoutUrl}" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                    <a href="${trackingClickUrl}" style="display: inline-block; padding: 16px 48px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; font-size: 18px; font-weight: 600; border-radius: 8px; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
                       Finalizar Compra →
                     </a>
                   </td>
@@ -156,6 +164,7 @@ export function getAbandonedCartEmailHTML(data: AbandonedCartEmailData): string 
       </td>
     </tr>
   </table>
+  ${trackingPixelUrl ? `<img src="${trackingPixelUrl}" width="1" height="1" style="display:none;" alt="" />` : ''}
 </body>
 </html>
   `;

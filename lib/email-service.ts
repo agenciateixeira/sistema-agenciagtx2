@@ -286,7 +286,28 @@ export async function sendAbandonedCartEmail(
     const logoUrl = emailSettings.logo_url || integration?.settings?.logo_url;
     const customMessage = emailSettings.custom_message;
 
-    // Preparar dados do email
+    // Criar registro de ação primeiro para ter o actionId (para tracking)
+    const { data: action, error: actionError } = await supabase
+      .from('automated_actions')
+      .insert({
+        webhook_event_id: params.webhookEventId,
+        action_type: 'email_sent',
+        channel: 'email',
+        recipient: params.customerEmail,
+        status: 'pending',
+        integration_id: params.integrationId,
+      })
+      .select('id')
+      .single();
+
+    if (actionError || !action) {
+      console.error('❌ Erro ao criar registro de ação:', actionError);
+      return { success: false, error: 'Erro ao criar registro de ação' };
+    }
+
+    const actionId = action.id;
+
+    // Preparar dados do email (agora com actionId para tracking)
     const emailData: AbandonedCartEmailData = {
       customerName: params.customerName || 'Cliente',
       items: params.items,
@@ -297,6 +318,7 @@ export async function sendAbandonedCartEmail(
       logoUrl,
       customMessage,
       senderName: emailSettings.sender_name || storeName,
+      actionId, // Para tracking de abertura e cliques
     };
 
     const subject = getAbandonedCartEmailSubject(emailData);
@@ -321,32 +343,29 @@ export async function sendAbandonedCartEmail(
 
     if (emailError) {
       console.error('❌ Erro ao enviar email via Resend:', emailError);
+
+      // Atualizar status para failed
+      await supabase
+        .from('automated_actions')
+        .update({ status: 'failed' })
+        .eq('id', actionId);
+
       return { success: false, error: emailError.message };
     }
 
     console.log('✅ Email enviado via Resend:', emailResult?.id);
 
-    // Salvar ação automática no banco
-    const { data: action, error: actionError } = await supabase
+    // Atualizar ação com informações do email enviado
+    await supabase
       .from('automated_actions')
-      .insert({
-        webhook_event_id: params.webhookEventId,
-        action_type: 'email_sent',
-        channel: 'email',
-        recipient: params.customerEmail,
+      .update({
         email_subject: subject,
         email_body_html: htmlContent,
         status: 'sent',
         sent_at: new Date().toISOString(),
         external_id: emailResult?.id,
       })
-      .select('id')
-      .single();
-
-    if (actionError) {
-      console.error('⚠️ Erro ao salvar automated_action:', actionError);
-      // Não retorna erro pois o email foi enviado com sucesso
-    }
+      .eq('id', actionId);
 
     // Marcar webhook_event como processado
     await supabase
