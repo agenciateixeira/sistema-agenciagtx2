@@ -4,6 +4,8 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
+// Integration actions for Shopify, Yampi, WooCommerce
+
 async function getSupabaseServer() {
   const cookieStore = cookies();
 
