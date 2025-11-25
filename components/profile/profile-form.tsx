@@ -89,15 +89,17 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
         throw uploadError;
       }
 
-      // Obter URL pública
+      // Obter URL pública com timestamp para evitar cache
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
+      const avatarUrlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+
       // Atualizar perfil com nova URL
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: avatarUrlWithTimestamp })
         .eq('id', user.id);
 
       if (updateError) {
@@ -105,7 +107,7 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
         throw updateError;
       }
 
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(avatarUrlWithTimestamp);
       setStatus('success');
       setMessage('Foto atualizada com sucesso!');
 
@@ -173,6 +175,8 @@ export function ProfileForm({ user, profile }: ProfileFormProps) {
                   alt={profile?.nome || 'Usuário'}
                   fill
                   className="object-cover"
+                  unoptimized
+                  key={avatarUrl}
                 />
               ) : (
                 <UserIcon className="h-12 w-12 text-brand-600" />

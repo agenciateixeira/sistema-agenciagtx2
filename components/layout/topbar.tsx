@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { appNavigation } from '@/lib/navigation';
 import { Bell, Search, User, LogOut, Menu, X } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import Image from 'next/image';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -14,6 +15,7 @@ interface TopbarProps {
 interface UserProfile {
   nome: string;
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  avatar_url?: string | null;
 }
 
 export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
@@ -31,7 +33,7 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
       if (user) {
         const { data: profile, error } = await supabase
           .from('profiles_with_email')
-          .select('nome, role, email')
+          .select('nome, role, email, avatar_url')
           .eq('id', user.id)
           .single();
 
@@ -93,8 +95,18 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 hover:bg-gray-50"
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-brand-700">
-                <User className="h-4 w-4" />
+              <div className="relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-brand-700">
+                {userProfile?.avatar_url ? (
+                  <Image
+                    src={`${userProfile.avatar_url}?t=${Date.now()}`}
+                    alt={userProfile.nome}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
               </div>
               <div className="hidden text-left lg:block">
                 <p className="text-sm font-medium text-gray-900">
