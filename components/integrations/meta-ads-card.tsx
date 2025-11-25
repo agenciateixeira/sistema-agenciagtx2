@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, AlertCircle, ExternalLink, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, ExternalLink, Loader2, Trash2 } from 'lucide-react';
 
 interface MetaConnection {
   id: string;
@@ -19,11 +19,34 @@ interface MetaAdsCardProps {
 
 export function MetaAdsCard({ connection }: MetaAdsCardProps) {
   const [loading, setLoading] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const handleConnect = () => {
     setLoading(true);
     // Redirecionar para rota OAuth
     window.location.href = '/api/auth/meta/start';
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm('Tem certeza que deseja desconectar sua conta do Meta Ads? Você perderá acesso às métricas.')) {
+      return;
+    }
+
+    setDisconnecting(true);
+    try {
+      const response = await fetch('/api/meta/disconnect', {
+        method: 'POST',
+      });
+
+      if (!response.ok) throw new Error('Failed to disconnect');
+
+      // Recarregar página para atualizar UI
+      window.location.reload();
+    } catch (error) {
+      console.error('Error disconnecting:', error);
+      alert('Erro ao desconectar. Tente novamente.');
+      setDisconnecting(false);
+    }
   };
 
   const getStatusBadge = () => {
@@ -166,8 +189,25 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
         ) : (
           <>
             <button
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2.5 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+            >
+              {disconnecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Desconectando...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4" />
+                  Desconectar
+                </>
+              )}
+            </button>
+            <button
               onClick={handleConnect}
-              className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              className="flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
             >
               Reconectar
             </button>
