@@ -127,29 +127,45 @@ export async function POST(
       try {
         console.log(`\n🔍 Processando checkout ${checkout.id}:`);
 
-        // Log completo da estrutura para debug
-        console.log('📦 Estrutura completa do checkout:', JSON.stringify(checkout, null, 2));
+        // Primeiro, tentar pegar email direto do checkout
+        let customerEmail = checkout.email || checkout.billing_address?.email || checkout.shipping_address?.email;
 
-        // Tentar múltiplas formas de extrair o email
-        const customerEmail =
-          checkout.email ||
-          checkout.customer?.email ||
-          checkout.billing_address?.email ||
-          checkout.shipping_address?.email ||
-          checkout.customer_locale?.email;
+        console.log(`   - Email no checkout: ${customerEmail || 'N/A'}`);
+        console.log(`   - Customer ID: ${checkout.customer?.id || 'N/A'}`);
 
-        console.log(`   - Email encontrado: ${customerEmail || 'N/A'}`);
-        console.log(`   - checkout.email: ${checkout.email || 'N/A'}`);
-        console.log(`   - checkout.customer?.email: ${checkout.customer?.email || 'N/A'}`);
-        console.log(`   - checkout.billing_address?.email: ${checkout.billing_address?.email || 'N/A'}`);
-        console.log(`   - Customer: ${checkout.customer?.first_name || 'N/A'}`);
+        // Se não tem email mas tem customer ID, buscar na API de Customers
+        if (!customerEmail && checkout.customer?.id) {
+          console.log(`   🔍 Buscando email do customer ${checkout.customer.id}...`);
+
+          try {
+            const customerResponse = await fetch(
+              `https://${shopDomain}/admin/api/2024-10/customers/${checkout.customer.id}.json`,
+              {
+                headers: {
+                  'X-Shopify-Access-Token': integration.api_key,
+                },
+              }
+            );
+
+            if (customerResponse.ok) {
+              const customerData = await customerResponse.json();
+              customerEmail = customerData.customer?.email;
+              console.log(`   ✅ Email encontrado: ${customerEmail}`);
+            } else {
+              console.log(`   ⚠️ Erro ao buscar customer: ${customerResponse.status}`);
+            }
+          } catch (error: any) {
+            console.log(`   ⚠️ Erro na API de customer: ${error.message}`);
+          }
+        }
+
         console.log(`   - Total: ${checkout.total_price || '0'}`);
         console.log(`   - Created: ${checkout.created_at}`);
         console.log(`   - Completed: ${checkout.completed_at || 'N/A'}`);
 
-        // Verificar se o checkout tem email
+        // Verificar se conseguimos o email
         if (!customerEmail) {
-          const reason = `Checkout ${checkout.id}: sem email`;
+          const reason = `Checkout ${checkout.id}: sem email (customer ID: ${checkout.customer?.id || 'N/A'})`;
           console.log(`   ⏭️  PULADO: ${reason}`);
           skipReasons.push(reason);
           skipped++;
