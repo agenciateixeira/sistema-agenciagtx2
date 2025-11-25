@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 
 export const dynamic = 'force-dynamic';
 
@@ -66,6 +67,9 @@ export async function POST(request: NextRequest) {
       primary_ad_account_id: ad_account_id,
       primary_pixel_id: pixel_id || null,
     });
+
+    // Revalidar cache da página ads-dashboard
+    revalidatePath('/ads-dashboard');
 
     return NextResponse.json({
       success: true,

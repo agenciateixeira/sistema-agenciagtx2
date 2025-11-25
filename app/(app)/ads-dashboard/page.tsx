@@ -166,7 +166,7 @@ export default async function AdsDashboardPage() {
         />
       ) : (
         <AdsDashboardClient
-          metaConnection={metaConnection}
+          userId={user.id}
           primaryAdAccountId={metaConnection.primary_ad_account_id}
         />
       )}

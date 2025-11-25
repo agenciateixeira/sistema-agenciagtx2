@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 
 interface AdsDashboardClientProps {
-  metaConnection: any;
+  userId: string;
   primaryAdAccountId: string;
 }
 
 export function AdsDashboardClient({
-  metaConnection,
+  userId,
   primaryAdAccountId,
 }: AdsDashboardClientProps) {
   const [datePreset, setDatePreset] = useState<'last_7d' | 'last_30d' | 'this_month' | 'last_month'>('last_30d');
@@ -41,10 +41,10 @@ export function AdsDashboardClient({
     setError(null);
 
     try {
-      console.log('🔵 Fetching account insights...');
+      console.log('🔵 Fetching account insights...', { userId, primaryAdAccountId });
       // Buscar insights da conta
       const accountResponse = await fetch(
-        `/api/meta/insights?user_id=${metaConnection.user_id}&type=account&date_preset=${datePreset}`
+        `/api/meta/insights?user_id=${userId}&type=account&date_preset=${datePreset}`
       );
 
       console.log('📡 Account response status:', accountResponse.status);
@@ -61,7 +61,7 @@ export function AdsDashboardClient({
 
       // Buscar insights de campanhas
       const campaignsResponse = await fetch(
-        `/api/meta/insights?user_id=${metaConnection.user_id}&type=campaigns&date_preset=${datePreset}`
+        `/api/meta/insights?user_id=${userId}&type=campaigns&date_preset=${datePreset}`
       );
 
       if (campaignsResponse.ok) {
@@ -71,7 +71,7 @@ export function AdsDashboardClient({
 
       // Buscar insights diários (últimos 30 dias)
       const dailyResponse = await fetch(
-        `/api/meta/insights?user_id=${metaConnection.user_id}&type=daily&days=30`
+        `/api/meta/insights?user_id=${userId}&type=daily&days=30`
       );
 
       if (dailyResponse.ok) {
@@ -81,7 +81,7 @@ export function AdsDashboardClient({
 
       // Buscar ROI (cruzamento Ads + Carrinhos)
       const roiResponse = await fetch(
-        `/api/meta/roi?user_id=${metaConnection.user_id}&date_preset=${datePreset}`
+        `/api/meta/roi?user_id=${userId}&date_preset=${datePreset}`
       );
 
       if (roiResponse.ok) {

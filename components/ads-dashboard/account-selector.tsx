@@ -74,7 +74,9 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
       if (!response.ok) throw new Error('Failed to save account');
 
       onSelectAccount(selectedAccountId, selectedPixelId);
-      window.location.reload();
+
+      // Redirecionar para ads-dashboard (força reload do server component)
+      window.location.href = '/ads-dashboard';
     } catch (error) {
       console.error('Error saving account:', error);
       alert('Erro ao salvar. Tente novamente.');
