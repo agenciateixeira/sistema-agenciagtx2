@@ -5,34 +5,51 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { decrypt } from '@/lib/crypto';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+async function getSupabaseServer() {
+  const cookieStore = await cookies();
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+      },
+    }
+  );
+}
 
 export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const userId = url.searchParams.get('user_id');
+    const supabase = await getSupabaseServer();
 
-    if (!userId) {
-      return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Buscar conexão Meta
     const { data: metaConnection, error: connectionError } = await supabase
       .from('meta_connections')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single();
 
     if (connectionError || !metaConnection) {
-      return NextResponse.json({ error: 'Meta connection not found' }, { status: 404 });
+      return NextResponse.json({
+        accounts: [],
+        pixels: [],
+        total_accounts: 0,
+        total_pixels: 0,
+      });
     }
 
     // Usar dados salvos no banco (que já têm business_id)
