@@ -1,18 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Loader2 } from 'lucide-react';
 
 interface AdAccount {
   id: string;
+  account_id: string;
   name: string;
-  account_status: number;
-  currency: string;
+  business_id: string;
+  account_status?: number;
+  currency?: string;
 }
 
 interface Pixel {
   id: string;
   name: string;
+  business_id: string;
 }
 
 interface AccountSelectorProps {
@@ -28,9 +31,30 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
   const [selectedPixelId, setSelectedPixelId] = useState(currentPixelId || '');
   const [saving, setSaving] = useState(false);
 
+  // Encontrar business_id da conta selecionada
+  const selectedAccount = accounts.find((acc) => acc.id === selectedAccountId);
+  const selectedBusinessId = selectedAccount?.business_id;
+
+  // Filtrar pixels pela mesma business da conta selecionada
+  const availablePixels = selectedBusinessId
+    ? pixels.filter((pixel) => pixel.business_id === selectedBusinessId)
+    : [];
+
+  // Resetar pixel selecionado se não estiver na lista filtrada
+  useEffect(() => {
+    if (selectedPixelId && !availablePixels.find((p) => p.id === selectedPixelId)) {
+      setSelectedPixelId('');
+    }
+  }, [selectedAccountId, availablePixels, selectedPixelId]);
+
   const handleSave = async () => {
-    if (!selectedAccountId || !selectedPixelId) {
-      alert('Selecione uma conta de anúncios E um Pixel');
+    if (!selectedAccountId) {
+      alert('Selecione uma conta de anúncios');
+      return;
+    }
+
+    if (availablePixels.length > 0 && !selectedPixelId) {
+      alert('Selecione um Pixel para usar com CAPI');
       return;
     }
 
@@ -82,17 +106,23 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                   <p className="font-medium text-gray-900">{account.name}</p>
-                  <p className="mt-1 text-xs text-gray-600">ID: {account.id}</p>
-                  <div className="mt-2 flex items-center gap-3 text-xs">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
-                      account.account_status === 1
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {account.account_status === 1 ? 'Ativa' : 'Inativa'}
-                    </span>
-                    <span className="text-gray-500">Moeda: {account.currency}</span>
-                  </div>
+                  <p className="mt-1 text-xs text-gray-600">ID: {account.account_id || account.id}</p>
+                  {(account.account_status !== undefined || account.currency) && (
+                    <div className="mt-2 flex items-center gap-3 text-xs">
+                      {account.account_status !== undefined && (
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 font-medium ${
+                          account.account_status === 1
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          {account.account_status === 1 ? 'Ativa' : 'Inativa'}
+                        </span>
+                      )}
+                      {account.currency && (
+                        <span className="text-gray-500">Moeda: {account.currency}</span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {selectedAccountId === account.id && (
                   <Check className="h-5 w-5 flex-shrink-0 text-blue-600" />
@@ -109,14 +139,16 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
           2. Selecione o Pixel (para CAPI)
         </h3>
         <p className="mt-2 text-sm text-gray-600">
-          {pixels.length > 0
-            ? `Você tem ${pixels.length} ${pixels.length === 1 ? 'Pixel' : 'Pixels'} disponíveis.`
-            : 'Nenhum Pixel encontrado. CAPI não funcionará sem um Pixel.'}
+          {!selectedAccountId
+            ? 'Selecione uma conta de anúncios primeiro para ver os pixels disponíveis.'
+            : availablePixels.length > 0
+            ? `${availablePixels.length} ${availablePixels.length === 1 ? 'Pixel disponível' : 'Pixels disponíveis'} para esta conta.`
+            : 'Nenhum Pixel encontrado para esta conta. CAPI não funcionará sem um Pixel.'}
         </p>
 
-        {pixels.length > 0 ? (
+        {selectedAccountId && availablePixels.length > 0 ? (
           <div className="mt-4 space-y-2 max-h-64 overflow-y-auto">
-            {pixels.map((pixel) => (
+            {availablePixels.map((pixel) => (
               <button
                 key={pixel.id}
                 onClick={() => setSelectedPixelId(pixel.id)}
@@ -138,13 +170,13 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
               </button>
             ))}
           </div>
-        ) : (
+        ) : selectedAccountId ? (
           <div className="mt-4 rounded-lg border border-yellow-300 bg-yellow-50 p-4">
             <p className="text-sm text-yellow-900">
-              <strong>Nenhum Pixel encontrado.</strong> Crie um Pixel no Gerenciador de Eventos do Meta e reconecte sua conta.
+              <strong>Nenhum Pixel encontrado para esta conta.</strong> Crie um Pixel no Gerenciador de Eventos do Meta vinculado a esta Business e reconecte sua conta.
             </p>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Botão de Confirmação */}
@@ -154,7 +186,7 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
         </p>
         <button
           onClick={handleSave}
-          disabled={!selectedAccountId || (pixels.length > 0 && !selectedPixelId) || saving}
+          disabled={!selectedAccountId || (availablePixels.length > 0 && !selectedPixelId) || saving}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? (

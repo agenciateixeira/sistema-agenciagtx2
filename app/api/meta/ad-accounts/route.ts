@@ -35,42 +35,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Meta connection not found' }, { status: 404 });
     }
 
-    // Descriptografar token
-    const accessToken = decrypt(metaConnection.access_token_encrypted);
-
-    // Buscar contas de anúncios do Meta
-    const accountsResponse = await fetch(
-      `https://graph.facebook.com/v22.0/me/adaccounts?fields=id,name,account_status,currency&limit=100&access_token=${accessToken}`
-    );
-
-    if (!accountsResponse.ok) {
-      const error = await accountsResponse.json();
-      throw new Error(error.error?.message || 'Failed to fetch ad accounts');
-    }
-
-    const accountsData = await accountsResponse.json();
-
-    // Formatar contas
-    const accounts = (accountsData.data || []).map((account: any) => ({
-      id: account.id.replace('act_', ''),
-      name: account.name,
-      account_status: account.account_status,
-      currency: account.currency,
-    }));
-
-    // Buscar Pixels do Meta
-    const pixelsResponse = await fetch(
-      `https://graph.facebook.com/v22.0/me/adspixels?fields=id,name&limit=100&access_token=${accessToken}`
-    );
-
-    let pixels = [];
-    if (pixelsResponse.ok) {
-      const pixelsData = await pixelsResponse.json();
-      pixels = (pixelsData.data || []).map((pixel: any) => ({
-        id: pixel.id,
-        name: pixel.name,
-      }));
-    }
+    // Usar dados salvos no banco (que já têm business_id)
+    const accounts = metaConnection.ad_account_ids || [];
+    const pixels = metaConnection.pixel_ids || [];
 
     return NextResponse.json({
       accounts,
