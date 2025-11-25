@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SectionTitle } from '@/components/dashboard/section-title';
 import { AdsDashboardClient } from '@/components/ads-dashboard/ads-dashboard-client';
+import { AccountSetup } from '@/components/ads-dashboard/account-setup';
 import { AlertCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
@@ -110,6 +111,9 @@ export default async function AdsDashboardPage() {
     );
   }
 
+  // Verificar se precisa configurar conta de anúncios
+  const needsAccountSetup = !metaConnection.primary_ad_account_id;
+
   // Passar dados para componente client
   return (
     <div className="space-y-6">
@@ -146,11 +150,18 @@ export default async function AdsDashboardPage() {
         </div>
       </div>
 
-      {/* Dashboard Client Component */}
-      <AdsDashboardClient
-        metaConnection={metaConnection}
-        primaryAdAccountId={metaConnection.primary_ad_account_id}
-      />
+      {/* Se precisa configurar conta, mostrar seletor */}
+      {needsAccountSetup ? (
+        <AccountSetup
+          userId={user.id}
+          primaryAccountId={metaConnection.primary_ad_account_id}
+        />
+      ) : (
+        <AdsDashboardClient
+          metaConnection={metaConnection}
+          primaryAdAccountId={metaConnection.primary_ad_account_id}
+        />
+      )}
     </div>
   );
 }
