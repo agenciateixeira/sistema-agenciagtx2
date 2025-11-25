@@ -39,6 +39,14 @@ export default async function AdsDashboardPage() {
     .eq('user_id', user.id)
     .single();
 
+  console.log('🔍 Meta Connection Data:', {
+    user_id: user.id,
+    has_connection: !!metaConnection,
+    primary_ad_account_id: metaConnection?.primary_ad_account_id,
+    primary_pixel_id: metaConnection?.primary_pixel_id,
+    ad_accounts_count: metaConnection?.ad_account_ids?.length || 0,
+  });
+
   // Se não tiver conexão, redirecionar para integrações
   if (!metaConnection) {
     return (
