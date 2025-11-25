@@ -198,18 +198,10 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Conexão Meta salva com sucesso!');
 
-    // 12. Redirecionar para página de seleção de conta (se tiver múltiplas)
-    if (adAccountIds.length > 1) {
-      console.log('↪️ Redirecionando para seleção de conta (múltiplas contas)');
-      return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/integrations/meta/select-account`
-      );
-    }
-
-    // 13. Redirecionar para integrações com sucesso
-    console.log('↪️ Redirecionando para integrations');
+    // 12. Redirecionar para ads-dashboard para selecionar conta e pixel
+    console.log('↪️ Redirecionando para ads-dashboard');
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/integrations?success=meta_connected`
+      `${process.env.NEXT_PUBLIC_APP_URL}/ads-dashboard`
     );
   } catch (error: any) {
     console.error('❌ Erro no callback OAuth Meta:', error);
