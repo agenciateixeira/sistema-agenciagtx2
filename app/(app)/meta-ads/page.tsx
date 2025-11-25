@@ -131,27 +131,36 @@ export default async function MetaAdsPage() {
     );
   }
 
-  // Buscar estatísticas CAPI
-  const { data: capiStats } = await supabase
-    .from('abandoned_carts')
-    .select('capi_purchase_sent, capi_add_to_cart_sent, status')
-    .eq('user_id', user.id);
+  // Buscar estatísticas CAPI (com fallback se tabela não existir ou colunas não existirem)
+  let totalRecovered = 0;
+  let purchaseEventsSent = 0;
+  let pendingEvents = 0;
 
-  const totalRecovered = capiStats?.filter((c) => c.status === 'recovered').length || 0;
-  const purchaseEventsSent = capiStats?.filter((c) => c.capi_purchase_sent).length || 0;
-  const pendingEvents = capiStats?.filter(
-    (c) => c.status === 'recovered' && !c.capi_purchase_sent
-  ).length || 0;
+  try {
+    const { data: capiStats } = await supabase
+      .from('abandoned_carts')
+      .select('capi_purchase_sent, capi_add_to_cart_sent, status')
+      .eq('user_id', user.id);
+
+    totalRecovered = capiStats?.filter((c) => c.status === 'recovered').length || 0;
+    purchaseEventsSent = capiStats?.filter((c) => c.capi_purchase_sent).length || 0;
+    pendingEvents = capiStats?.filter(
+      (c) => c.status === 'recovered' && !c.capi_purchase_sent
+    ).length || 0;
+  } catch (error) {
+    console.error('Error fetching CAPI stats:', error);
+    // Se der erro, continua com valores zerados
+  }
 
   // Serializar metaConnection para passar para client components
   const metaConnectionData = {
     user_id: metaConnection.user_id,
-    meta_user_name: metaConnection.meta_user_name,
-    ad_account_ids: metaConnection.ad_account_ids,
-    primary_ad_account_id: metaConnection.primary_ad_account_id,
-    primary_pixel_id: metaConnection.primary_pixel_id,
-    status: metaConnection.status,
-    token_expires_at: metaConnection.token_expires_at,
+    meta_user_name: metaConnection.meta_user_name || '',
+    ad_account_ids: metaConnection.ad_account_ids || [],
+    primary_ad_account_id: metaConnection.primary_ad_account_id || '',
+    primary_pixel_id: metaConnection.primary_pixel_id || '',
+    status: metaConnection.status || '',
+    token_expires_at: metaConnection.token_expires_at ? String(metaConnection.token_expires_at) : '',
   };
 
   // Definir abas
