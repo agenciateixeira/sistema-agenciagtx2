@@ -5,14 +5,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,24 +19,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ad_account_id is required' }, { status: 400 });
     }
 
-    // Buscar usuário autenticado
-    const authHeader = request.headers.get('cookie');
-    if (!authHeader) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // Criar cliente Supabase server-side
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
 
-    // Extrair token do cookie
-    const accessToken = authHeader
-      .split(';')
-      .find((c) => c.trim().startsWith('sb-access-token='))
-      ?.split('=')[1];
-
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Verificar usuário
-    const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+    // Verificar usuário autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
