@@ -6,6 +6,8 @@ import { DailyPerformanceChart } from './daily-performance-chart';
 import { CampaignsTable } from './campaigns-table';
 import { ROISummary } from './roi-summary';
 import { ROICampaignsTable } from './roi-campaigns-table';
+import { CompareMode } from './compare-mode';
+import { ConsolidatedMode } from './consolidated-mode';
 import {
   DollarSign,
   MousePointerClick,
@@ -32,9 +34,46 @@ export function AdsDashboardClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Multi-conta
+  const [availableAccounts, setAvailableAccounts] = useState<any[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState(primaryAdAccountId);
+  const [viewMode, setViewMode] = useState<'single' | 'compare' | 'consolidated'>('single');
+  const [compareAccounts, setCompareAccounts] = useState<string[]>([]);
+
+  useEffect(() => {
+    loadAvailableAccounts();
+  }, []);
+
   useEffect(() => {
     fetchInsights();
-  }, [datePreset]);
+  }, [datePreset, selectedAccountId]);
+
+  const loadAvailableAccounts = async () => {
+    try {
+      const response = await fetch(`/api/meta/ad-accounts?user_id=${userId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableAccounts(data.accounts || []);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    }
+  };
+
+  const handleAccountChange = async (accountId: string) => {
+    setSelectedAccountId(accountId);
+
+    // Salvar como primary_ad_account_id
+    try {
+      await fetch('/api/meta/set-primary-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ad_account_id: accountId }),
+      });
+    } catch (error) {
+      console.error('Error setting primary account:', error);
+    }
+  };
 
   const fetchInsights = async () => {
     setLoading(true);
@@ -140,6 +179,59 @@ export function AdsDashboardClient({
 
   return (
     <div className="space-y-6">
+      {/* Seleção de Conta e Modo de Visualização */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4">
+        {/* Dropdown de Conta */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Conta:</label>
+          <select
+            value={selectedAccountId}
+            onChange={(e) => handleAccountChange(e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            {availableAccounts.map((account) => (
+              <option key={account.id} value={account.account_id || account.id.replace('act_', '')}>
+                {account.name} ({account.account_id || account.id.replace('act_', '')})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Modo de Visualização */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setViewMode('single')}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              viewMode === 'single'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Individual
+          </button>
+          <button
+            onClick={() => setViewMode('compare')}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              viewMode === 'compare'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Comparar
+          </button>
+          <button
+            onClick={() => setViewMode('consolidated')}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+              viewMode === 'consolidated'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Consolidado
+          </button>
+        </div>
+      </div>
+
       {/* Filtro de Período */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -160,7 +252,26 @@ export function AdsDashboardClient({
         </div>
       </div>
 
-      {/* Cards de Métricas Principais */}
+      {/* Renderizar conteúdo baseado no modo */}
+      {viewMode === 'compare' && (
+        <CompareMode
+          userId={userId}
+          availableAccounts={availableAccounts}
+          datePreset={datePreset}
+        />
+      )}
+
+      {viewMode === 'consolidated' && (
+        <ConsolidatedMode
+          userId={userId}
+          availableAccounts={availableAccounts}
+          datePreset={datePreset}
+        />
+      )}
+
+      {viewMode === 'single' && (
+        <>
+          {/* Cards de Métricas Principais */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
           title="Gasto Total"
@@ -277,6 +388,8 @@ export function AdsDashboardClient({
           </h3>
           <CampaignsTable campaigns={campaignsInsights} />
         </div>
+      )}
+        </>
       )}
     </div>
   );
