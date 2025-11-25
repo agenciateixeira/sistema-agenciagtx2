@@ -89,9 +89,14 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
         toast.error(errorMsg, { id: toastId });
         if (data.errors && data.errors.length > 0) {
           console.error('❌ Erros nos webhooks:', data.errors);
-          // Mostrar primeiro erro ao usuário
-          const firstError = data.errors[0];
-          toast.error(`Erro: ${firstError.error}`, { duration: 5000 });
+          // Mostrar cada erro ao usuário
+          data.errors.forEach((err: any) => {
+            const errorDetails = typeof err.error === 'object'
+              ? JSON.stringify(err.error)
+              : err.error;
+            console.error(`  - Webhook ${err.topic}: ${errorDetails}`);
+            toast.error(`${err.topic}: ${errorDetails}`, { duration: 8000 });
+          });
         }
       }
     } catch (error: any) {
@@ -124,6 +129,15 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
 
         if (data.suggestion) {
           toast(data.suggestion, { icon: '💡', duration: 7000 });
+        }
+
+        // Mostrar motivos dos pulos
+        if (data.skipReasons && data.skipReasons.length > 0) {
+          console.log('📋 Carrinhos pulados:', data.skipReasons);
+          toast(`${data.skipped} carrinhos pulados. Veja o console (F12) para detalhes.`, {
+            icon: 'ℹ️',
+            duration: 7000,
+          });
         }
 
         router.refresh();

@@ -120,21 +120,33 @@ export async function POST(
     let imported = 0;
     let errors = 0;
     let skipped = 0;
+    const skipReasons: string[] = [];
 
     // Processar cada checkout
     for (const checkout of allCheckouts) {
       try {
+        console.log(`\n🔍 Processando checkout ${checkout.id}:`);
+        console.log(`   - Email: ${checkout.email || checkout.customer?.email || 'N/A'}`);
+        console.log(`   - Customer: ${checkout.customer?.first_name || 'N/A'}`);
+        console.log(`   - Total: ${checkout.total_price || '0'}`);
+        console.log(`   - Created: ${checkout.created_at}`);
+        console.log(`   - Completed: ${checkout.completed_at || 'N/A'}`);
+
         // Verificar se o checkout tem email
         const customerEmail = checkout.email || checkout.customer?.email;
         if (!customerEmail) {
-          console.log(`⏭️  Checkout ${checkout.id} sem email, pulando...`);
+          const reason = `Checkout ${checkout.id}: sem email`;
+          console.log(`   ⏭️  PULADO: ${reason}`);
+          skipReasons.push(reason);
           skipped++;
           continue;
         }
 
         // Pular checkouts completados
         if (checkout.completed_at) {
-          console.log(`⏭️  Checkout ${checkout.id} já completado, pulando...`);
+          const reason = `Checkout ${checkout.id}: já completado em ${checkout.completed_at}`;
+          console.log(`   ⏭️  PULADO: ${reason}`);
+          skipReasons.push(reason);
           skipped++;
           continue;
         }
@@ -221,7 +233,16 @@ export async function POST(
       }
     }
 
-    console.log(`✅ Sincronização completa: ${imported} importados, ${skipped} pulados, ${errors} erros`);
+    console.log(`\n✅ Sincronização completa:`);
+    console.log(`   - Total encontrado: ${allCheckouts.length}`);
+    console.log(`   - Importados: ${imported}`);
+    console.log(`   - Pulados: ${skipped}`);
+    console.log(`   - Erros: ${errors}`);
+
+    if (skipReasons.length > 0) {
+      console.log(`\n📋 Motivos dos pulos:`);
+      skipReasons.forEach(reason => console.log(`   - ${reason}`));
+    }
 
     return NextResponse.json({
       success: true,
@@ -230,6 +251,7 @@ export async function POST(
       skipped,
       errors,
       total: allCheckouts.length,
+      skipReasons: skipReasons.length > 0 ? skipReasons : undefined,
     });
   } catch (error: any) {
     console.error('❌ Erro ao sincronizar carrinhos:', error);
