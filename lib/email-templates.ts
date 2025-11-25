@@ -369,3 +369,141 @@ export const reportEmailTemplate = (params: {
 </html>
   `;
 };
+
+export const alertEmailTemplate = (params: {
+  userName: string;
+  alertName: string;
+  alertType: string;
+  message: string;
+  triggerData: any;
+}) => {
+  const alertTypeConfig: Record<string, { bg: string; border: string; text: string; label: string; icon: string }> = {
+    cpc_increase: {
+      bg: '#fef2f2',
+      border: '#ef4444',
+      text: '#991b1b',
+      label: 'Aumento de CPC',
+      icon: '🔺'
+    },
+    roas_decrease: {
+      bg: '#fef2f2',
+      border: '#f97316',
+      text: '#9a3412',
+      label: 'Diminuição de ROAS',
+      icon: '📉'
+    },
+    ctr_decrease: {
+      bg: '#fffbeb',
+      border: '#f59e0b',
+      text: '#92400e',
+      label: 'Diminuição de CTR',
+      icon: '📊'
+    },
+    spend_limit: {
+      bg: '#fef2f2',
+      border: '#dc2626',
+      text: '#991b1b',
+      label: 'Limite de Gastos',
+      icon: '💰'
+    },
+    cart_abandonment: {
+      bg: '#fffbeb',
+      border: '#f59e0b',
+      text: '#92400e',
+      label: 'Abandono de Carrinho',
+      icon: '🛒'
+    },
+    no_conversions: {
+      bg: '#fef2f2',
+      border: '#dc2626',
+      text: '#991b1b',
+      label: 'Sem Conversões',
+      icon: '⚠️'
+    },
+  };
+
+  const config = alertTypeConfig[params.alertType] || {
+    bg: '#fef2f2',
+    border: '#dc2626',
+    text: '#991b1b',
+    label: 'Alerta',
+    icon: '🔔'
+  };
+
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerta: ${params.alertName}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f9fafb;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e5e7eb; overflow: hidden;">
+          <!-- Header GTX -->
+          <tr>
+            <td style="background-color: #22c55e; padding: 30px; text-align: center;">
+              <img src="https://app.agenciagtx.com.br/favicon.png" alt="GTX Logo" style="width: 48px; height: 48px; margin: 0 auto 12px auto; display: block;" />
+              <h1 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 700;">🚨 Alerta Disparado</h1>
+              <p style="margin: 6px 0 0 0; color: #dcfce7; font-size: 13px;">Sistema de Monitoramento Meta Ads</p>
+            </td>
+          </tr>
+
+          <!-- Alert Box -->
+          <tr>
+            <td style="padding: 0;">
+              <div style="background-color: ${config.bg}; border-left: 4px solid ${config.border}; padding: 20px 30px;">
+                <p style="margin: 0 0 8px 0; color: ${config.text}; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
+                  ${config.icon} ${config.label}
+                </p>
+                <h2 style="margin: 0; color: ${config.text}; font-size: 20px; font-weight: 700;">
+                  ${params.alertName}
+                </h2>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Conteúdo -->
+          <tr>
+            <td style="padding: 40px 30px;">
+              <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">Olá, ${params.userName}</p>
+
+              <p style="margin: 20px 0 30px 0; color: #1f2937; font-size: 16px; line-height: 1.8;">
+                ${params.message}
+              </p>
+
+              <!-- CTA Button -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center">
+                    <a href="https://app.agenciagtx.com.br/alerts" style="display: inline-block; background-color: #22c55e; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 600;">
+                      Ver Alertas no Dashboard →
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin-top: 32px; font-size: 13px; color: #6b7280; line-height: 1.6;">
+                Este é um email automático do sistema de alertas. Configure suas preferências de notificação no dashboard.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f9fafb; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 8px 0; color: #374151; font-size: 14px; font-weight: 500;">Sistema GTX</p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px;">© 2024 Agência GTX. Todos os direitos reservados.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+  `;
+};

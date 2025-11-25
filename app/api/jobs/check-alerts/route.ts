@@ -7,9 +7,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
+import { alertEmailTemplate } from '@/lib/email-templates';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutos
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 // Cliente Supabase com service role para acessar todos os dados
 const supabaseAdmin = createClient(
@@ -82,6 +86,69 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Busca métricas do Meta Ads
+ */
+async function fetchMetaInsights(metaConnection: any, datePreset: string) {
+  try {
+    const accountId = metaConnection.primary_ad_account_id;
+    const accessToken = metaConnection.access_token;
+
+    const url = `https://graph.facebook.com/v18.0/act_${accountId}/insights?fields=spend,impressions,clicks,cpc,ctr,reach,actions,action_values,cost_per_action_type&date_preset=${datePreset}&access_token=${accessToken}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Meta API error:', data.error);
+      return null;
+    }
+
+    if (!data.data || data.data.length === 0) {
+      return null;
+    }
+
+    const insights = data.data[0];
+
+    // Calcular ROAS se houver compras
+    let roas = 0;
+    if (insights.action_values) {
+      const purchases = insights.action_values.find((a: any) =>
+        a.action_type === 'offsite_conversion.fb_pixel_purchase' ||
+        a.action_type === 'purchase'
+      );
+      if (purchases && parseFloat(insights.spend) > 0) {
+        roas = (parseFloat(purchases.value) / parseFloat(insights.spend)) * 100;
+      }
+    }
+
+    // Calcular conversões
+    let conversions = 0;
+    if (insights.actions) {
+      const purchaseAction = insights.actions.find((a: any) =>
+        a.action_type === 'offsite_conversion.fb_pixel_purchase' ||
+        a.action_type === 'purchase'
+      );
+      if (purchaseAction) {
+        conversions = parseInt(purchaseAction.value);
+      }
+    }
+
+    return {
+      spend: parseFloat(insights.spend || 0),
+      impressions: parseInt(insights.impressions || 0),
+      clicks: parseInt(insights.clicks || 0),
+      cpc: parseFloat(insights.cpc || 0),
+      ctr: parseFloat(insights.ctr || 0),
+      roas,
+      conversions,
+    };
+  } catch (error) {
+    console.error('Error fetching Meta insights:', error);
+    return null;
+  }
+}
+
+/**
  * Verifica se a condição do alerta foi atingida
  */
 async function checkAlertCondition(alert: any): Promise<false | { triggerData: any }> {
@@ -98,43 +165,144 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
     return false;
   }
 
-  // Buscar insights recentes (últimas 24h)
-  const accountId = metaConnection.primary_ad_account_id;
-
-  // Aqui você faria uma chamada real à API do Meta para obter dados atuais
-  // Por enquanto, vou retornar false para não disparar alertas sem dados reais
-
-  // TODO: Implementar lógica real de verificação para cada tipo de alerta
-  // const currentMetrics = await fetchMetaInsights(metaConnection, accountId);
-
   switch (alert_type) {
-    case 'cpc_increase':
-      // Verificar se CPC aumentou X% comparado com período anterior
-      // const threshold = config.threshold; // ex: 20 (%)
-      // const period = config.period; // ex: '24h', '7d', '30d'
-      // if (currentCPC > previousCPC * (1 + threshold/100)) {
-      //   return { triggerData: { current_cpc: currentCPC, previous_cpc: previousCPC } };
-      // }
-      break;
+    case 'cpc_increase': {
+      const threshold = parseFloat(config.threshold || 20); // % de aumento
+      const period = config.period || 'yesterday'; // período de comparação
 
-    case 'roas_decrease':
-      // Verificar se ROAS caiu abaixo do mínimo
-      // const minROAS = config.threshold;
-      // if (currentROAS < minROAS) {
-      //   return { triggerData: { current_roas: currentROAS, min_roas: minROAS } };
-      // }
-      break;
+      // Buscar métricas atuais (hoje)
+      const currentMetrics = await fetchMetaInsights(metaConnection, 'today');
+      if (!currentMetrics || currentMetrics.cpc === 0) return false;
 
-    case 'spend_limit':
-      // Verificar se gasto atingiu o limite
-      // const limit = config.threshold;
-      // const period = config.period; // 'daily', 'weekly', 'monthly'
-      // if (currentSpend >= limit) {
-      //   return { triggerData: { current_spend: currentSpend, limit } };
-      // }
-      break;
+      // Buscar métricas anteriores (ontem ou período anterior)
+      const previousMetrics = await fetchMetaInsights(metaConnection, period);
+      if (!previousMetrics || previousMetrics.cpc === 0) return false;
 
-    // Outros tipos...
+      // Calcular % de aumento
+      const increasePercent = ((currentMetrics.cpc - previousMetrics.cpc) / previousMetrics.cpc) * 100;
+
+      if (increasePercent >= threshold) {
+        return {
+          triggerData: {
+            current_cpc: currentMetrics.cpc,
+            previous_cpc: previousMetrics.cpc,
+            increase_percent: increasePercent,
+          },
+        };
+      }
+      break;
+    }
+
+    case 'roas_decrease': {
+      const minROAS = parseFloat(config.threshold || 100); // ROAS mínimo (%)
+
+      // Buscar métricas atuais
+      const currentMetrics = await fetchMetaInsights(metaConnection, 'today');
+      if (!currentMetrics) return false;
+
+      if (currentMetrics.roas < minROAS && currentMetrics.roas > 0) {
+        return {
+          triggerData: {
+            current_roas: currentMetrics.roas,
+            min_roas: minROAS,
+          },
+        };
+      }
+      break;
+    }
+
+    case 'ctr_decrease': {
+      const minCTR = parseFloat(config.threshold || 1); // CTR mínimo (%)
+
+      // Buscar métricas atuais
+      const currentMetrics = await fetchMetaInsights(metaConnection, 'today');
+      if (!currentMetrics) return false;
+
+      if (currentMetrics.ctr < minCTR && currentMetrics.ctr > 0) {
+        return {
+          triggerData: {
+            current_ctr: currentMetrics.ctr,
+            min_ctr: minCTR,
+          },
+        };
+      }
+      break;
+    }
+
+    case 'spend_limit': {
+      const limit = parseFloat(config.threshold || 1000); // Limite de gasto
+      const period = config.period || 'today'; // 'today', 'this_week', 'this_month'
+
+      // Buscar métricas do período
+      const metrics = await fetchMetaInsights(metaConnection, period);
+      if (!metrics) return false;
+
+      if (metrics.spend >= limit) {
+        return {
+          triggerData: {
+            current_spend: metrics.spend,
+            limit,
+            period,
+          },
+        };
+      }
+      break;
+    }
+
+    case 'no_conversions': {
+      const days = parseInt(config.days || 3); // Número de dias sem conversão
+
+      // Verificar cada um dos últimos X dias
+      let hasConversions = false;
+      for (let i = 0; i < days; i++) {
+        const datePreset = i === 0 ? 'today' : i === 1 ? 'yesterday' : `last_${i}d`;
+        const metrics = await fetchMetaInsights(metaConnection, datePreset);
+
+        if (metrics && metrics.conversions > 0) {
+          hasConversions = true;
+          break;
+        }
+      }
+
+      if (!hasConversions) {
+        return {
+          triggerData: {
+            days_without_conversions: days,
+          },
+        };
+      }
+      break;
+    }
+
+    case 'cart_abandonment': {
+      // Para esse precisaríamos de dados do banco de cart_recovery
+      // Vou buscar a taxa de abandono dos últimos dias
+      const { data: abandonedCarts } = await supabaseAdmin
+        .from('cart_recovery')
+        .select('id, recovered')
+        .eq('user_id', user_id)
+        .gte('abandoned_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      if (!abandonedCarts || abandonedCarts.length === 0) return false;
+
+      const totalCarts = abandonedCarts.length;
+      const recoveredCarts = abandonedCarts.filter(c => c.recovered).length;
+      const abandonmentRate = ((totalCarts - recoveredCarts) / totalCarts) * 100;
+
+      const maxRate = parseFloat(config.threshold || 80);
+
+      if (abandonmentRate >= maxRate) {
+        return {
+          triggerData: {
+            abandonment_rate: abandonmentRate,
+            max_rate: maxRate,
+            total_carts: totalCarts,
+            recovered_carts: recoveredCarts,
+          },
+        };
+      }
+      break;
+    }
   }
 
   return false;
@@ -176,8 +344,7 @@ async function triggerAlert(alert: any, triggerData: any) {
   for (const channel of channels) {
     try {
       if (channel === 'email') {
-        // TODO: Enviar email via Resend
-        console.log(`📧 Would send email for alert ${alert.id}`);
+        await sendAlertEmail(alert, triggerData);
       } else if (channel === 'in_app') {
         // Já criou o histórico, in-app vai pegar de lá
         console.log(`🔔 In-app notification created for alert ${alert.id}`);
@@ -189,6 +356,52 @@ async function triggerAlert(alert: any, triggerData: any) {
 }
 
 /**
+ * Envia email de alerta via Resend
+ */
+async function sendAlertEmail(alert: any, triggerData: any) {
+  try {
+    // Buscar dados do usuário
+    const { data: profile } = await supabaseAdmin
+      .from('profiles_with_email')
+      .select('nome, email')
+      .eq('id', alert.user_id)
+      .single();
+
+    if (!profile || !profile.email) {
+      console.error(`User ${alert.user_id} has no email`);
+      return;
+    }
+
+    const message = generateAlertMessage(alert, triggerData);
+
+    const emailHTML = alertEmailTemplate({
+      userName: profile.nome || 'Usuário',
+      alertName: alert.name,
+      alertType: alert.alert_type,
+      message,
+      triggerData,
+    });
+
+    const { error } = await resend.emails.send({
+      from: 'Sistema GTX <noreply@agenciagtx.com.br>',
+      to: profile.email,
+      subject: `🚨 Alerta: ${alert.name}`,
+      html: emailHTML,
+    });
+
+    if (error) {
+      console.error('Resend error:', error);
+      throw error;
+    }
+
+    console.log(`📧 Email sent to ${profile.email} for alert ${alert.id}`);
+  } catch (error) {
+    console.error('Error sending alert email:', error);
+    throw error;
+  }
+}
+
+/**
  * Gera mensagem descritiva do alerta
  */
 function generateAlertMessage(alert: any, triggerData: any): string {
@@ -196,24 +409,24 @@ function generateAlertMessage(alert: any, triggerData: any): string {
 
   switch (alert_type) {
     case 'cpc_increase':
-      return `O CPC aumentou ${config.threshold}% e atingiu R$ ${triggerData.current_cpc?.toFixed(2)}`;
+      return `🔺 O CPC aumentou ${triggerData.increase_percent?.toFixed(1)}% e passou de R$ ${triggerData.previous_cpc?.toFixed(2)} para R$ ${triggerData.current_cpc?.toFixed(2)}`;
 
     case 'roas_decrease':
-      return `O ROAS caiu para ${triggerData.current_roas?.toFixed(2)} (abaixo do mínimo de ${config.threshold})`;
+      return `📉 O ROAS caiu para ${triggerData.current_roas?.toFixed(2)}% (abaixo do mínimo de ${triggerData.min_roas}%)`;
 
     case 'ctr_decrease':
-      return `O CTR caiu para ${triggerData.current_ctr?.toFixed(2)}% (abaixo do mínimo de ${config.threshold}%)`;
+      return `📊 O CTR está em ${triggerData.current_ctr?.toFixed(2)}% (abaixo do mínimo de ${triggerData.min_ctr}%)`;
 
     case 'spend_limit':
-      return `O gasto atingiu R$ ${triggerData.current_spend?.toFixed(2)} (limite: R$ ${config.threshold})`;
+      return `💰 O gasto atingiu R$ ${triggerData.current_spend?.toFixed(2)} (limite configurado: R$ ${triggerData.limit})`;
 
     case 'cart_abandonment':
-      return `A taxa de abandono atingiu ${triggerData.abandonment_rate?.toFixed(2)}% (máximo: ${config.threshold}%)`;
+      return `🛒 Taxa de abandono em ${triggerData.abandonment_rate?.toFixed(1)}% (${triggerData.recovered_carts}/${triggerData.total_carts} carrinhos recuperados)`;
 
     case 'no_conversions':
-      return `Sem conversões há ${config.days} dias`;
+      return `⚠️ Sem conversões há ${triggerData.days_without_conversions} dias`;
 
     default:
-      return `Alerta "${name}" foi disparado`;
+      return `🔔 Alerta "${name}" foi disparado`;
   }
 }
