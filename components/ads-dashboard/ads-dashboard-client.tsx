@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { MetricCard } from './metric-card';
 import { DailyPerformanceChart } from './daily-performance-chart';
 import { CampaignsTable } from './campaigns-table';
@@ -64,14 +65,23 @@ export function AdsDashboardClient({
     setSelectedAccountId(accountId);
 
     // Salvar como primary_ad_account_id
+    const toastId = toast.loading('Trocando conta...');
+
     try {
-      await fetch('/api/meta/set-primary-account', {
+      const response = await fetch('/api/meta/set-primary-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ad_account_id: accountId }),
       });
+
+      if (response.ok) {
+        toast.success('Conta alterada com sucesso!', { id: toastId });
+      } else {
+        throw new Error('Failed to set primary account');
+      }
     } catch (error) {
       console.error('Error setting primary account:', error);
+      toast.error('Erro ao trocar conta. Tente novamente.', { id: toastId });
     }
   };
 

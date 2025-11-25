@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { CheckCircle, AlertCircle, ExternalLink, Loader2, Trash2, Settings, ChevronDown, ChevronUp, Star } from 'lucide-react';
 
 interface MetaConnection {
@@ -41,6 +42,8 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
     }
 
     setDisconnecting(true);
+    const toastId = toast.loading('Desconectando sua conta do Meta Ads...');
+
     try {
       const response = await fetch('/api/meta/disconnect', {
         method: 'POST',
@@ -48,11 +51,15 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
 
       if (!response.ok) throw new Error('Failed to disconnect');
 
-      // Recarregar página para atualizar UI
-      window.location.reload();
+      toast.success('Conta desconectada com sucesso!', { id: toastId });
+
+      // Recarregar página após 1 segundo
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('Error disconnecting:', error);
-      alert('Erro ao desconectar. Tente novamente.');
+      toast.error('Erro ao desconectar. Tente novamente.', { id: toastId });
       setDisconnecting(false);
     }
   };
@@ -93,11 +100,13 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
     const pixelId = selectedPixels[accountId];
 
     if (!pixelId) {
-      alert('Por favor, selecione um pixel para esta conta antes de definir como principal.');
+      toast.error('Por favor, selecione um pixel para esta conta antes de definir como principal.');
       return;
     }
 
     setChangingPrimary(true);
+    const toastId = toast.loading('Alterando conta principal...');
+
     try {
       const response = await fetch('/api/meta/set-primary-account', {
         method: 'POST',
@@ -110,11 +119,15 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
 
       if (!response.ok) throw new Error('Failed to set primary account');
 
-      // Recarregar página para atualizar UI
-      window.location.href = '/integrations';
+      toast.success('Conta principal alterada com sucesso!', { id: toastId });
+
+      // Recarregar página após 1 segundo
+      setTimeout(() => {
+        window.location.href = '/integrations';
+      }, 1000);
     } catch (error) {
       console.error('Error setting primary account:', error);
-      alert('Erro ao alterar conta principal. Tente novamente.');
+      toast.error('Erro ao alterar conta principal. Tente novamente.', { id: toastId });
       setChangingPrimary(false);
     }
   };
