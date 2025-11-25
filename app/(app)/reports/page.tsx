@@ -1,12 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import { SectionTitle } from '@/components/dashboard/section-title';
-import { ReportsList } from '@/components/reports/reports-list';
-import { CreateReportForm } from '@/components/reports/create-report-form';
-import { Plus } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { ReportsClient } from '@/components/reports/reports-client';
+
+export const dynamic = 'force-dynamic';
 
 async function getSupabaseServer() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -27,38 +27,29 @@ export default async function ReportsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    return null;
+    redirect('/login');
   }
 
-  // Buscar relatórios agendados
-  const { data: schedules } = await supabase
-    .from('ReportSchedule')
-    .select(`
-      *,
-      template:ReportTemplate(*)
-    `)
-    .eq('ownerId', user.id)
-    .order('createdAt', { ascending: false });
+  // Buscar conexão Meta
+  const { data: metaConnection } = await supabase
+    .from('meta_connections')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
 
   return (
     <div className="space-y-6">
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <SectionTitle
-          title="Relatórios Personalizados"
-          description="Crie e agende relatórios customizados"
-        />
-
-        <CreateReportForm />
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Relatórios para Clientes</h1>
+        <p className="mt-1 text-sm text-gray-600">
+          Gere relatórios profissionais de Meta Ads para enviar aos seus clientes
+        </p>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <SectionTitle
-          title="Relatórios Agendados"
-          description="Seus relatórios automáticos"
-        />
-
-        <ReportsList schedules={schedules || []} />
-      </div>
+      <ReportsClient
+        userId={user.id}
+        metaConnection={metaConnection ? { ...metaConnection, user_id: user.id } : null}
+      />
     </div>
   );
 }
