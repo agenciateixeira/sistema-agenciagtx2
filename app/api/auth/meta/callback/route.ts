@@ -29,11 +29,14 @@ const supabase = createClient(
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔵 CALLBACK INICIADO');
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
     const errorDescription = searchParams.get('error_description');
+
+    console.log('📝 Params:', { code: code?.slice(0, 20) + '...', state: state?.slice(0, 20) + '...', error });
 
     // 1. Verificar se houve erro no OAuth
     if (error) {
@@ -50,6 +53,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('🔍 Validando state...');
     // 3. Validar state (CSRF protection)
     const { data: oauthState, error: stateError } = await supabase
       .from('oauth_states')
@@ -60,7 +64,7 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (stateError || !oauthState) {
-      console.error('❌ Invalid or expired state');
+      console.error('❌ Invalid or expired state:', stateError);
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/integrations?error=invalid_state`
       );
@@ -74,6 +78,7 @@ export async function GET(request: NextRequest) {
     // 4. Trocar code por short-lived token
     console.log('🔄 Trocando code por token...');
     const shortTokenData = await exchangeCodeForToken(code);
+    console.log('✅ Short token obtido');
 
     // 5. Trocar short token por long-lived token (60 dias)
     console.log('🔄 Trocando por long-lived token...');
@@ -88,10 +93,12 @@ export async function GET(request: NextRequest) {
     // 6. Buscar informações do usuário
     console.log('👤 Buscando informações do usuário...');
     const userInfo = await getMe(accessToken);
+    console.log('✅ User info:', userInfo.name);
 
     // 7. Buscar businesses
     console.log('🏢 Buscando businesses...');
     const businesses = await getUserBusinesses(accessToken);
+    console.log(`✅ Encontrados ${businesses.length} businesses`);
 
     // 8. Para cada business, buscar ad accounts e pixels
     console.log('📊 Buscando ad accounts e pixels...');
@@ -126,10 +133,12 @@ export async function GET(request: NextRequest) {
     });
 
     // 9. Criptografar access token
+    console.log('🔐 Criptografando token...');
     const encryptedToken = encrypt(accessToken);
 
     // 10. Obter user_id do usuário autenticado via cookies
-    const cookieStore = cookies();
+    console.log('🔑 Obtendo usuário autenticado...');
+    const cookieStore = await cookies();
     const supabaseAuth = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -152,6 +161,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = user.id;
+    console.log('✅ Usuário autenticado:', userId);
 
     // 11. Salvar ou atualizar conexão no banco
     const connectionData = {
@@ -172,6 +182,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Upsert (insert ou update se já existir)
+    console.log('💾 Salvando conexão no banco...');
     const { error: saveError } = await supabase
       .from('meta_connections')
       .upsert(connectionData, {
@@ -189,12 +200,14 @@ export async function GET(request: NextRequest) {
 
     // 12. Redirecionar para página de seleção de conta (se tiver múltiplas)
     if (adAccountIds.length > 1) {
+      console.log('↪️ Redirecionando para seleção de conta (múltiplas contas)');
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL}/integrations/meta/select-account`
       );
     }
 
     // 13. Redirecionar para integrações com sucesso
+    console.log('↪️ Redirecionando para integrations');
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/integrations?success=meta_connected`
     );

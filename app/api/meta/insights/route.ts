@@ -67,6 +67,13 @@ export async function GET(request: NextRequest) {
     // Descriptografar token
     const accessToken = decrypt(metaConnection.access_token_encrypted);
 
+    console.log('📊 Buscando insights:', {
+      type,
+      userId,
+      primary_ad_account_id: metaConnection.primary_ad_account_id,
+      datePreset,
+    });
+
     // Buscar insights conforme tipo solicitado
     let insights;
 
@@ -77,6 +84,7 @@ export async function GET(request: NextRequest) {
           accessToken,
           datePreset as any
         );
+        console.log('✅ Account insights:', insights ? 'Dados encontrados' : 'Sem dados');
         break;
 
       case 'campaigns':
