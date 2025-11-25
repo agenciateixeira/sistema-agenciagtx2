@@ -88,10 +88,9 @@ export async function POST(request: NextRequest) {
 /**
  * Busca métricas do Meta Ads
  */
-async function fetchMetaInsights(metaConnection: any, datePreset: string) {
+async function fetchMetaInsights(adAccountId: string, accessToken: string, datePreset: string) {
   try {
-    const accountId = metaConnection.primary_ad_account_id;
-    const accessToken = metaConnection.access_token;
+    const accountId = adAccountId;
 
     const url = `https://graph.facebook.com/v18.0/act_${accountId}/insights?fields=spend,impressions,clicks,cpc,ctr,reach,actions,action_values,cost_per_action_type&date_preset=${datePreset}&access_token=${accessToken}`;
 
@@ -152,18 +151,20 @@ async function fetchMetaInsights(metaConnection: any, datePreset: string) {
  * Verifica se a condição do alerta foi atingida
  */
 async function checkAlertCondition(alert: any): Promise<false | { triggerData: any }> {
-  const { alert_type, config, user_id } = alert;
+  const { alert_type, config, user_id, ad_account_id, integration_id } = alert;
 
-  // Buscar meta_connection do usuário
+  // Buscar meta_connection do usuário para obter access_token
   const { data: metaConnection } = await supabaseAdmin
     .from('meta_connections')
     .select('*')
     .eq('user_id', user_id)
     .single();
 
-  if (!metaConnection || !metaConnection.primary_ad_account_id) {
+  if (!metaConnection || !ad_account_id) {
     return false;
   }
+
+  const accessToken = metaConnection.access_token;
 
   switch (alert_type) {
     case 'cpc_increase': {
@@ -171,11 +172,11 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
       const period = config.period || 'yesterday'; // período de comparação
 
       // Buscar métricas atuais (hoje)
-      const currentMetrics = await fetchMetaInsights(metaConnection, 'today');
+      const currentMetrics = await fetchMetaInsights(ad_account_id, accessToken, 'today');
       if (!currentMetrics || currentMetrics.cpc === 0) return false;
 
       // Buscar métricas anteriores (ontem ou período anterior)
-      const previousMetrics = await fetchMetaInsights(metaConnection, period);
+      const previousMetrics = await fetchMetaInsights(ad_account_id, accessToken, period);
       if (!previousMetrics || previousMetrics.cpc === 0) return false;
 
       // Calcular % de aumento
@@ -197,7 +198,7 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
       const minROAS = parseFloat(config.threshold || 100); // ROAS mínimo (%)
 
       // Buscar métricas atuais
-      const currentMetrics = await fetchMetaInsights(metaConnection, 'today');
+      const currentMetrics = await fetchMetaInsights(ad_account_id, accessToken, 'today');
       if (!currentMetrics) return false;
 
       if (currentMetrics.roas < minROAS && currentMetrics.roas > 0) {
@@ -215,7 +216,7 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
       const minCTR = parseFloat(config.threshold || 1); // CTR mínimo (%)
 
       // Buscar métricas atuais
-      const currentMetrics = await fetchMetaInsights(metaConnection, 'today');
+      const currentMetrics = await fetchMetaInsights(ad_account_id, accessToken, 'today');
       if (!currentMetrics) return false;
 
       if (currentMetrics.ctr < minCTR && currentMetrics.ctr > 0) {
@@ -234,7 +235,7 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
       const period = config.period || 'today'; // 'today', 'this_week', 'this_month'
 
       // Buscar métricas do período
-      const metrics = await fetchMetaInsights(metaConnection, period);
+      const metrics = await fetchMetaInsights(ad_account_id, accessToken, period);
       if (!metrics) return false;
 
       if (metrics.spend >= limit) {
@@ -256,7 +257,7 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
       let hasConversions = false;
       for (let i = 0; i < days; i++) {
         const datePreset = i === 0 ? 'today' : i === 1 ? 'yesterday' : `last_${i}d`;
-        const metrics = await fetchMetaInsights(metaConnection, datePreset);
+        const metrics = await fetchMetaInsights(ad_account_id, accessToken, datePreset);
 
         if (metrics && metrics.conversions > 0) {
           hasConversions = true;
@@ -275,18 +276,24 @@ async function checkAlertCondition(alert: any): Promise<false | { triggerData: a
     }
 
     case 'cart_abandonment': {
-      // Para esse precisaríamos de dados do banco de cart_recovery
-      // Vou buscar a taxa de abandono dos últimos dias
-      const { data: abandonedCarts } = await supabaseAdmin
-        .from('cart_recovery')
-        .select('id, recovered')
+      // Buscar carrinhos abandonados dos últimos 7 dias
+      let query = supabaseAdmin
+        .from('abandoned_carts')
+        .select('id, status')
         .eq('user_id', user_id)
         .gte('abandoned_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+
+      // Filtrar por integração se especificado
+      if (integration_id) {
+        query = query.eq('integration_id', integration_id);
+      }
+
+      const { data: abandonedCarts } = await query;
 
       if (!abandonedCarts || abandonedCarts.length === 0) return false;
 
       const totalCarts = abandonedCarts.length;
-      const recoveredCarts = abandonedCarts.filter(c => c.recovered).length;
+      const recoveredCarts = abandonedCarts.filter(c => c.status === 'recovered').length;
       const abandonmentRate = ((totalCarts - recoveredCarts) / totalCarts) * 100;
 
       const maxRate = parseFloat(config.threshold || 80);

@@ -65,12 +65,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { alert_type, name, description, config, check_frequency, notification_channels } = body;
+    const {
+      alert_type,
+      name,
+      description,
+      config,
+      check_frequency,
+      notification_channels,
+      ad_account_id,
+      integration_id
+    } = body;
 
     // Validações
     if (!alert_type || !name || !config) {
       return NextResponse.json(
         { error: 'alert_type, name e config são obrigatórios' },
+        { status: 400 }
+      );
+    }
+
+    if (!ad_account_id) {
+      return NextResponse.json(
+        { error: 'ad_account_id é obrigatório' },
         { status: 400 }
       );
     }
@@ -86,6 +102,8 @@ export async function POST(request: NextRequest) {
         config,
         check_frequency: check_frequency || 'daily',
         notification_channels: notification_channels || ['email'],
+        ad_account_id,
+        integration_id: integration_id || null,
         is_active: true,
       })
       .select()

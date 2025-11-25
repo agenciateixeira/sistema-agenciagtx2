@@ -198,7 +198,9 @@ export function AlertsHistory({ userId }: AlertsHistoryProps) {
                     </button>
                   )}
                   {item.is_read && (
-                    <CheckCircle className="h-5 w-5 text-green-600" title="Lido" />
+                    <div title="Lido">
+                      <CheckCircle className="h-5 w-5 text-green-600" />
+                    </div>
                   )}
                 </div>
               </div>

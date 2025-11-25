@@ -371,6 +371,51 @@ function CreateAlertModal({
   const [name, setName] = useState('');
   const [config, setConfig] = useState<any>({});
   const [creating, setCreating] = useState(false);
+  const [adAccountId, setAdAccountId] = useState('');
+  const [integrationId, setIntegrationId] = useState('');
+  const [adAccounts, setAdAccounts] = useState<any[]>([]);
+  const [integrations, setIntegrations] = useState<any[]>([]);
+  const [loadingResources, setLoadingResources] = useState(false);
+
+  useEffect(() => {
+    if (step === 'configure') {
+      loadResources();
+    }
+  }, [step]);
+
+  const loadResources = async () => {
+    setLoadingResources(true);
+    try {
+      // Buscar contas do Meta Ads
+      const accountsResponse = await fetch('/api/meta/ad-accounts');
+      if (accountsResponse.ok) {
+        const accountsData = await accountsResponse.json();
+        setAdAccounts(accountsData.accounts || []);
+
+        // Selecionar primeira conta por padrão
+        if (accountsData.accounts?.length > 0) {
+          const firstAccount = accountsData.accounts[0];
+          setAdAccountId(firstAccount.account_id || firstAccount.id.replace('act_', ''));
+        }
+      }
+
+      // Buscar integrações (lojas)
+      const intResponse = await fetch('/api/integrations');
+      if (intResponse.ok) {
+        const intData = await intResponse.json();
+        setIntegrations(intData.integrations || []);
+
+        // Selecionar primeira integração por padrão
+        if (intData.integrations?.length > 0) {
+          setIntegrationId(intData.integrations[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading resources:', error);
+    } finally {
+      setLoadingResources(false);
+    }
+  };
 
   const handleSelectType = (type: any) => {
     setSelectedType(type);
@@ -381,6 +426,18 @@ function CreateAlertModal({
   const handleCreate = async () => {
     if (!name || Object.keys(config).length === 0) {
       toast.error('Preencha todos os campos');
+      return;
+    }
+
+    if (!adAccountId) {
+      toast.error('Selecione uma conta de anúncios');
+      return;
+    }
+
+    // Validar se precisa de integration_id para alertas de carrinho/conversões
+    const needsIntegration = ['cart_abandonment', 'no_conversions'].includes(selectedType.type);
+    if (needsIntegration && !integrationId) {
+      toast.error('Selecione uma loja (integração)');
       return;
     }
 
@@ -398,6 +455,8 @@ function CreateAlertModal({
           config,
           check_frequency: 'daily',
           notification_channels: ['email'],
+          ad_account_id: adAccountId,
+          integration_id: needsIntegration ? integrationId : null,
         }),
       });
 
@@ -455,6 +514,69 @@ function CreateAlertModal({
                 placeholder="Ex: CPC muito alto"
               />
             </div>
+
+            {/* Seleção de Conta de Anúncios */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Conta de Anúncios *
+              </label>
+              {loadingResources ? (
+                <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Carregando contas...
+                </div>
+              ) : adAccounts.length === 0 ? (
+                <div className="mt-1 rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+                  Nenhuma conta conectada. Conecte sua conta do Meta Ads primeiro.
+                </div>
+              ) : (
+                <select
+                  value={adAccountId}
+                  onChange={(e) => setAdAccountId(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {adAccounts.map((account) => (
+                    <option
+                      key={account.id}
+                      value={account.account_id || account.id.replace('act_', '')}
+                    >
+                      {account.name} ({account.account_id || account.id})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {/* Seleção de Loja (apenas para alertas de carrinho/conversão) */}
+            {['cart_abandonment', 'no_conversions'].includes(selectedType?.type) && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Loja / Integração *
+                </label>
+                {loadingResources ? (
+                  <div className="mt-1 flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Carregando lojas...
+                  </div>
+                ) : integrations.length === 0 ? (
+                  <div className="mt-1 rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+                    Nenhuma loja conectada. Conecte uma loja (Shopify, Yampi, etc) primeiro.
+                  </div>
+                ) : (
+                  <select
+                    value={integrationId}
+                    onChange={(e) => setIntegrationId(e.target.value)}
+                    className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {integrations.map((integration) => (
+                      <option key={integration.id} value={integration.id}>
+                        {integration.store_name} ({integration.platform})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
 
             {selectedType?.fields.map((field: any) => (
               <div key={field.name}>
