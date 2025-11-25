@@ -9,6 +9,7 @@ import { ROISummary } from './roi-summary';
 import { ROICampaignsTable } from './roi-campaigns-table';
 import { CompareMode } from './compare-mode';
 import { ConsolidatedMode } from './consolidated-mode';
+import { ExportButton } from './export-button';
 import {
   DollarSign,
   MousePointerClick,
@@ -242,7 +243,7 @@ export function AdsDashboardClient({
         </div>
       </div>
 
-      {/* Filtro de Período */}
+      {/* Filtro de Período e Exportação */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700">Período:</label>
@@ -257,8 +258,18 @@ export function AdsDashboardClient({
             <option value="last_month">Mês passado</option>
           </select>
         </div>
-        <div className="text-xs text-gray-500">
-          {accountInsights.date_start} até {accountInsights.date_stop}
+
+        <div className="flex items-center gap-3">
+          <div className="text-xs text-gray-500">
+            {accountInsights.date_start} até {accountInsights.date_stop}
+          </div>
+          <ExportButton
+            accountInsights={accountInsights}
+            campaignsInsights={campaignsInsights}
+            dailyInsights={dailyInsights}
+            roiData={roiData}
+            datePreset={datePreset}
+          />
         </div>
       </div>
 
