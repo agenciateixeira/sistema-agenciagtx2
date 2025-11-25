@@ -41,17 +41,22 @@ export function AdsDashboardClient({
     setError(null);
 
     try {
+      console.log('🔵 Fetching account insights...');
       // Buscar insights da conta
       const accountResponse = await fetch(
         `/api/meta/insights?user_id=${metaConnection.user_id}&type=account&date_preset=${datePreset}`
       );
 
+      console.log('📡 Account response status:', accountResponse.status);
+
       if (!accountResponse.ok) {
         const errorData = await accountResponse.json();
+        console.error('❌ Account insights error:', errorData);
         throw new Error(errorData.error || 'Failed to fetch account insights');
       }
 
       const accountData = await accountResponse.json();
+      console.log('✅ Account data received:', accountData);
       setAccountInsights(accountData.data);
 
       // Buscar insights de campanhas
@@ -84,7 +89,8 @@ export function AdsDashboardClient({
         setRoiData(roiResult.data);
       }
     } catch (err: any) {
-      console.error('Erro ao buscar insights:', err);
+      console.error('❌ ERRO CRÍTICO ao buscar insights:', err);
+      console.error('Stack trace:', err.stack);
       setError(err.message);
     } finally {
       setLoading(false);
