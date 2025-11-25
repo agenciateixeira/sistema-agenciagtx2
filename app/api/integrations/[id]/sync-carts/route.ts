@@ -47,21 +47,28 @@ export async function POST(
 
     // Buscar checkouts abandonados da Shopify
     // API: /admin/api/2024-10/checkouts.json?status=open
-    const response = await fetch(
-      `https://${shopDomain}/admin/api/2024-10/checkouts.json?status=open&limit=250`,
-      {
-        headers: {
-          'X-Shopify-Access-Token': integration.api_key,
-        },
-      }
-    );
+    const apiUrl = `https://${shopDomain}/admin/api/2024-10/checkouts.json?status=open&limit=250`;
+    console.log('📡 URL da API:', apiUrl);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'X-Shopify-Access-Token': integration.api_key,
+      },
+    });
+
+    console.log('📊 Status da resposta:', response.status);
 
     const data = await response.json();
+    console.log('📦 Dados recebidos:', JSON.stringify(data, null, 2));
 
     if (!response.ok) {
       console.error('❌ Erro ao buscar checkouts:', data);
       return NextResponse.json(
-        { error: data.errors || 'Erro ao buscar checkouts da Shopify' },
+        {
+          error: data.errors || data.error || 'Erro ao buscar checkouts da Shopify',
+          details: data,
+          status: response.status,
+        },
         { status: response.status }
       );
     }
@@ -69,24 +76,66 @@ export async function POST(
     const checkouts = data.checkouts || [];
     console.log(`📦 Encontrados ${checkouts.length} checkouts`);
 
+    // Log de cada checkout encontrado
+    if (checkouts.length > 0) {
+      checkouts.forEach((c: any, idx: number) => {
+        console.log(`  ${idx + 1}. ID: ${c.id}, Email: ${c.email}, Total: ${c.total_price}, Created: ${c.created_at}`);
+      });
+    } else {
+      console.log('⚠️ Nenhum checkout encontrado. Verifique:');
+      console.log('  - Se existem checkouts abandonados na Shopify');
+      console.log('  - Se a API key tem permissão read_checkouts');
+      console.log('  - Se os checkouts têm status "open"');
+    }
+
+    // Se não encontrou com status=open, tentar sem filtro de status
+    let allCheckouts = checkouts;
     if (checkouts.length === 0) {
+      console.log('🔄 Tentando buscar checkouts sem filtro de status...');
+      const response2 = await fetch(
+        `https://${shopDomain}/admin/api/2024-10/checkouts.json?limit=250`,
+        {
+          headers: {
+            'X-Shopify-Access-Token': integration.api_key,
+          },
+        }
+      );
+
+      if (response2.ok) {
+        const data2 = await response2.json();
+        allCheckouts = data2.checkouts || [];
+        console.log(`📦 Encontrados ${allCheckouts.length} checkouts (sem filtro)`);
+      }
+    }
+
+    if (allCheckouts.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'Nenhum carrinho abandonado encontrado',
+        message: 'Nenhum carrinho abandonado encontrado. Verifique se a API key tem permissão "read_checkouts" e se existem checkouts na loja.',
         imported: 0,
+        suggestion: 'Crie um checkout de teste na loja e tente novamente.',
       });
     }
 
     let imported = 0;
     let errors = 0;
+    let skipped = 0;
 
     // Processar cada checkout
-    for (const checkout of checkouts) {
+    for (const checkout of allCheckouts) {
       try {
         // Verificar se o checkout tem email
         const customerEmail = checkout.email || checkout.customer?.email;
         if (!customerEmail) {
           console.log(`⏭️  Checkout ${checkout.id} sem email, pulando...`);
+          skipped++;
+          continue;
+        }
+
+        // Pular checkouts completados
+        if (checkout.completed_at) {
+          console.log(`⏭️  Checkout ${checkout.id} já completado, pulando...`);
+          skipped++;
           continue;
         }
 
@@ -172,14 +221,15 @@ export async function POST(
       }
     }
 
-    console.log(`✅ Sincronização completa: ${imported} importados, ${errors} erros`);
+    console.log(`✅ Sincronização completa: ${imported} importados, ${skipped} pulados, ${errors} erros`);
 
     return NextResponse.json({
       success: true,
-      message: `${imported} carrinhos importados com sucesso`,
+      message: `${imported} carrinhos importados${skipped > 0 ? `, ${skipped} pulados` : ''}${errors > 0 ? `, ${errors} erros` : ''}`,
       imported,
+      skipped,
       errors,
-      total: checkouts.length,
+      total: allCheckouts.length,
     });
   } catch (error: any) {
     console.error('❌ Erro ao sincronizar carrinhos:', error);

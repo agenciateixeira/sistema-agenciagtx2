@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { CheckCircle, XCircle, Trash2, RefreshCw, Edit, Webhook, Download } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
@@ -26,6 +27,7 @@ interface IntegrationsListProps {
 }
 
 export function IntegrationsList({ integrations }: IntegrationsListProps) {
+  const router = useRouter();
   const [testing, setTesting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [configuringWebhooks, setConfiguringWebhooks] = useState<string | null>(null);
@@ -37,10 +39,10 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
     const result = await testIntegration(id);
 
     if (result.error) {
-      alert(`Erro: ${result.error}`);
+      toast.error(`Erro: ${result.error}`);
     } else {
-      alert('Conexão testada com sucesso!');
-      window.location.reload();
+      toast.success('Conexão testada com sucesso!');
+      router.refresh();
     }
     setTesting(null);
   }
@@ -51,13 +53,15 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
     }
 
     setDeleting(id);
+    const toastId = toast.loading('Removendo integração...');
     const result = await deleteIntegration(id);
 
     if (result.error) {
-      alert(`Erro: ${result.error}`);
+      toast.error(`Erro: ${result.error}`, { id: toastId });
       setDeleting(null);
     } else {
-      window.location.reload();
+      toast.success('Integração removida!', { id: toastId });
+      router.refresh();
     }
   }
 
@@ -79,15 +83,19 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
 
       if (data.success) {
         toast.success(`${data.webhooks?.length || 0} webhooks configurados!`, { id: toastId });
-        window.location.reload();
+        router.refresh();
       } else {
-        toast.error(data.message || 'Erro ao configurar webhooks', { id: toastId });
-        if (data.errors) {
-          console.error('Erros:', data.errors);
+        const errorMsg = data.message || 'Erro ao configurar webhooks';
+        toast.error(errorMsg, { id: toastId });
+        if (data.errors && data.errors.length > 0) {
+          console.error('❌ Erros nos webhooks:', data.errors);
+          // Mostrar primeiro erro ao usuário
+          const firstError = data.errors[0];
+          toast.error(`Erro: ${firstError.error}`, { duration: 5000 });
         }
       }
     } catch (error: any) {
-      console.error('Erro ao configurar webhooks:', error);
+      console.error('❌ Erro ao configurar webhooks:', error);
       toast.error('Erro ao configurar webhooks', { id: toastId });
     } finally {
       setConfiguringWebhooks(null);
@@ -111,16 +119,19 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
       const data = await response.json();
 
       if (data.success) {
-        toast.success(
-          `${data.imported} carrinhos importados! ${data.errors > 0 ? `(${data.errors} erros)` : ''}`,
-          { id: toastId, duration: 5000 }
-        );
-        window.location.reload();
+        const msg = data.message || `${data.imported} carrinhos importados!`;
+        toast.success(msg, { id: toastId, duration: 5000 });
+
+        if (data.suggestion) {
+          toast(data.suggestion, { icon: '💡', duration: 7000 });
+        }
+
+        router.refresh();
       } else {
         toast.error(data.error || 'Erro ao sincronizar carrinhos', { id: toastId });
       }
     } catch (error: any) {
-      console.error('Erro ao sincronizar carrinhos:', error);
+      console.error('❌ Erro ao sincronizar carrinhos:', error);
       toast.error('Erro ao sincronizar carrinhos', { id: toastId });
     } finally {
       setSyncingCarts(null);
