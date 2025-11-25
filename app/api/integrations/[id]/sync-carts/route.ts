@@ -147,12 +147,14 @@ export async function POST(
               }
             );
 
-            if (customerResponse.ok) {
-              const customerData = await customerResponse.json();
-              customerEmail = customerData.customer?.email;
-              console.log(`   ✅ Email encontrado: ${customerEmail}`);
+            const customerData = await customerResponse.json();
+            console.log(`   📦 Resposta da API de Customer (status ${customerResponse.status}):`, JSON.stringify(customerData, null, 2));
+
+            if (customerResponse.ok && customerData.customer) {
+              customerEmail = customerData.customer.email;
+              console.log(`   ✅ Email extraído: ${customerEmail}`);
             } else {
-              console.log(`   ⚠️ Erro ao buscar customer: ${customerResponse.status}`);
+              console.log(`   ⚠️ Erro ao buscar customer ou sem dados`);
             }
           } catch (error: any) {
             console.log(`   ⚠️ Erro na API de customer: ${error.message}`);
