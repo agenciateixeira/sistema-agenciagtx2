@@ -32,7 +32,9 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
   const [saving, setSaving] = useState(false);
 
   // Encontrar business_id da conta selecionada
-  const selectedAccount = accounts.find((acc) => acc.id === selectedAccountId);
+  const selectedAccount = accounts.find((acc) =>
+    (acc.account_id || acc.id.replace('act_', '')) === selectedAccountId
+  );
   const selectedBusinessId = selectedAccount?.business_id;
 
   // Filtrar pixels pela mesma business da conta selecionada
@@ -96,9 +98,9 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
           {accounts.map((account) => (
             <button
               key={account.id}
-              onClick={() => setSelectedAccountId(account.id)}
+              onClick={() => setSelectedAccountId(account.account_id || account.id.replace('act_', ''))}
               className={`w-full rounded-lg border-2 p-4 text-left transition ${
-                selectedAccountId === account.id
+                selectedAccountId === (account.account_id || account.id.replace('act_', ''))
                   ? 'border-blue-500 bg-blue-100'
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
@@ -124,7 +126,7 @@ export function AccountSelector({ accounts, pixels, currentAccountId, currentPix
                     </div>
                   )}
                 </div>
-                {selectedAccountId === account.id && (
+                {selectedAccountId === (account.account_id || account.id.replace('act_', '')) && (
                   <Check className="h-5 w-5 flex-shrink-0 text-blue-600" />
                 )}
               </div>
