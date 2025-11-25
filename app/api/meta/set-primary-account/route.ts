@@ -15,6 +15,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { ad_account_id, pixel_id } = body;
 
+    console.log('💾 set-primary-account recebido:', {
+      ad_account_id,
+      pixel_id,
+    });
+
     if (!ad_account_id) {
       return NextResponse.json({ error: 'ad_account_id is required' }, { status: 400 });
     }
@@ -52,11 +57,15 @@ export async function POST(request: NextRequest) {
       .eq('user_id', user.id);
 
     if (updateError) {
-      console.error('Error updating primary account:', updateError);
+      console.error('❌ Error updating primary account:', updateError);
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    console.log(`✅ Primary account set to ${ad_account_id}${pixel_id ? `, pixel ${pixel_id}` : ''} for user ${user.id}`);
+    console.log(`✅ Primary account saved:`, {
+      user_id: user.id,
+      primary_ad_account_id: ad_account_id,
+      primary_pixel_id: pixel_id || null,
+    });
 
     return NextResponse.json({
       success: true,

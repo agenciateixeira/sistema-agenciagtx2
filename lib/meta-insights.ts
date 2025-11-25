@@ -60,6 +60,13 @@ export async function getAdAccountInsights(
     // Remove 'act_' prefix se existir
     const cleanAccountId = adAccountId.replace('act_', '');
 
+    console.log('📊 getAdAccountInsights:', {
+      original_id: adAccountId,
+      clean_id: cleanAccountId,
+      final_url_id: `act_${cleanAccountId}`,
+      date_preset: datePreset,
+    });
+
     const url = new URL(`${GRAPH_API_URL}/${GRAPH_VERSION}/act_${cleanAccountId}/insights`);
 
     url.searchParams.set('access_token', accessToken);
@@ -83,21 +90,37 @@ export async function getAdAccountInsights(
     url.searchParams.set('level', 'account');
     url.searchParams.set('limit', '1');
 
+    console.log('🔗 Meta API URL:', url.toString().replace(accessToken, 'REDACTED'));
+
     const response = await fetch(url.toString());
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('❌ Erro ao buscar insights:', error);
+      console.error('❌ Erro ao buscar insights (status ' + response.status + '):', error);
       throw new Error(error.error?.message || 'Failed to fetch insights');
     }
 
     const json = await response.json();
 
+    console.log('📥 Meta API Response:', {
+      has_data: !!json.data,
+      data_length: json.data?.length || 0,
+      paging: json.paging ? 'yes' : 'no',
+    });
+
     if (!json.data || json.data.length === 0) {
+      console.log('⚠️ Nenhum dado retornado pela Meta API para esta conta/período');
       return null;
     }
 
     const data = json.data[0];
+    console.log('✅ Dados encontrados:', {
+      account_id: data.account_id,
+      account_name: data.account_name,
+      date_range: `${data.date_start} - ${data.date_stop}`,
+      spend: data.spend,
+      impressions: data.impressions,
+    });
 
     // Calcular ROAS se tiver conversões
     let roas = undefined;
