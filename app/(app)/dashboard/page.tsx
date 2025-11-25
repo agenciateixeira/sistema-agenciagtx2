@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { SectionTitle } from '@/components/dashboard/section-title';
 import { StatCard } from '@/components/dashboard/stat-card';
+import { MetaAdsSummary } from '@/components/dashboard/meta-ads-summary';
 import { Download, Bell, FileText, Webhook, Users, Activity } from 'lucide-react';
 import Link from 'next/link';
 
@@ -91,6 +92,13 @@ export default async function DashboardPage() {
     .eq('active', true)
     .limit(3);
 
+  // Buscar conexão Meta Ads
+  const { data: metaConnection } = await supabase
+    .from('meta_connections')
+    .select('*')
+    .eq('user_id', user.id)
+    .single();
+
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-brand-200 bg-brand-50 p-6">
@@ -137,6 +145,9 @@ export default async function DashboardPage() {
           icon={<Users className="h-5 w-5" />}
         />
       </div>
+
+      {/* Meta Ads Summary */}
+      <MetaAdsSummary userId={user.id} metaConnection={metaConnection} />
 
       {/* Notificações Recentes */}
       <div className="grid gap-6 lg:grid-cols-2">
