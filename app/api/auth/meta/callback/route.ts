@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { encrypt } from '@/lib/crypto';
 import {
   exchangeCodeForToken,
@@ -126,20 +128,30 @@ export async function GET(request: NextRequest) {
     // 9. Criptografar access token
     const encryptedToken = encrypt(accessToken);
 
-    // 10. Obter user_id do usuário autenticado
-    // TODO: Melhorar isso - buscar user_id do session token
-    // Por enquanto, vamos criar um middleware ou pegar do cookie
-    // Para MVP, vamos criar a conexão para o primeiro usuário encontrado
-    // Em produção, SEMPRE validar o user_id da sessão
+    // 10. Obter user_id do usuário autenticado via cookies
+    const cookieStore = cookies();
+    const supabaseAuth = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
 
-    const { data: users } = await supabase.from('profiles').select('id').limit(1);
-    const userId = users?.[0]?.id;
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
 
-    if (!userId) {
+    if (authError || !user) {
+      console.error('❌ Usuário não autenticado:', authError);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_APP_URL}/integrations?error=user_not_found`
+        `${process.env.NEXT_PUBLIC_APP_URL}/login?error=not_authenticated`
       );
     }
+
+    const userId = user.id;
 
     // 11. Salvar ou atualizar conexão no banco
     const connectionData = {
