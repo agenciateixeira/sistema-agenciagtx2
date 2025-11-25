@@ -88,9 +88,9 @@ export default async function UTMTrackingPage() {
       </div>
 
       {/* Gerador de UTM - Destaque Principal */}
-      <div className="rounded-lg border-2 border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-900">🔗 Criar URL com UTM</h2>
+          <h2 className="text-xl font-bold text-gray-900">Criar URL com UTM</h2>
           <p className="mt-1 text-sm text-gray-600">
             Preencha os campos abaixo para gerar uma URL rastreável
           </p>

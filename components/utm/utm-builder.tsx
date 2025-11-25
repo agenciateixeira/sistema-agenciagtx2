@@ -15,6 +15,7 @@ export function UTMBuilder({ storeDomain }: UTMBuilderProps) {
   const [utmContent, setUtmContent] = useState('');
   const [utmTerm, setUtmTerm] = useState('');
   const [copied, setCopied] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null);
 
   // Gerar URL completa
   const generateURL = () => {
@@ -69,31 +70,44 @@ export function UTMBuilder({ storeDomain }: UTMBuilderProps) {
     setUtmSource(suggestion.source);
     setUtmMedium(suggestion.medium);
     setUtmCampaign(suggestion.campaign);
+    setSelectedPlatform(platform);
   };
 
   return (
     <div className="space-y-6">
       {/* Sugestões Rápidas */}
       <div>
-        <p className="text-sm font-medium text-gray-700 mb-2">⚡ Começar rápido:</p>
+        <p className="text-sm font-medium text-gray-700 mb-2">Começar rápido:</p>
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => applySuggestion('facebook')}
-            className="inline-flex items-center gap-2 rounded-lg border border-blue-300 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-100"
+            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+              selectedPlatform === 'facebook'
+                ? 'border-blue-300 bg-blue-50 text-blue-700'
+                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            📘 Facebook Ads
+            Facebook Ads
           </button>
           <button
             onClick={() => applySuggestion('instagram')}
-            className="inline-flex items-center gap-2 rounded-lg border border-pink-300 bg-pink-50 px-3 py-2 text-sm font-medium text-pink-700 transition hover:bg-pink-100"
+            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+              selectedPlatform === 'instagram'
+                ? 'border-pink-300 bg-pink-50 text-pink-700'
+                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            📸 Instagram Ads
+            Instagram Ads
           </button>
           <button
             onClick={() => applySuggestion('google')}
-            className="inline-flex items-center gap-2 rounded-lg border border-green-300 bg-green-50 px-3 py-2 text-sm font-medium text-green-700 transition hover:bg-green-100"
+            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition ${
+              selectedPlatform === 'google'
+                ? 'border-green-300 bg-green-50 text-green-700'
+                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+            }`}
           >
-            🔍 Google Ads
+            Google Ads
           </button>
         </div>
       </div>
