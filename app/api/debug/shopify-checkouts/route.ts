@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         // Estrutura completa
         full_checkout: c,
       })),
-    }, null, 2); // Pretty print
+    });
   } catch (error: any) {
     console.error('❌ Erro:', error);
     return NextResponse.json(
