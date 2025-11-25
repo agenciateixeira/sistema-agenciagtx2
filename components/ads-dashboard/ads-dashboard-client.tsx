@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { MetricCard } from './metric-card';
 import { DailyPerformanceChart } from './daily-performance-chart';
 import { CampaignsTable } from './campaigns-table';
+import { ROISummary } from './roi-summary';
+import { ROICampaignsTable } from './roi-campaigns-table';
 import {
   DollarSign,
   MousePointerClick,
@@ -26,6 +28,7 @@ export function AdsDashboardClient({
   const [accountInsights, setAccountInsights] = useState<any>(null);
   const [campaignsInsights, setCampaignsInsights] = useState<any[]>([]);
   const [dailyInsights, setDailyInsights] = useState<any[]>([]);
+  const [roiData, setRoiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +72,16 @@ export function AdsDashboardClient({
       if (dailyResponse.ok) {
         const dailyData = await dailyResponse.json();
         setDailyInsights(dailyData.data || []);
+      }
+
+      // Buscar ROI (cruzamento Ads + Carrinhos)
+      const roiResponse = await fetch(
+        `/api/meta/roi?user_id=${metaConnection.user_id}&date_preset=${datePreset}`
+      );
+
+      if (roiResponse.ok) {
+        const roiResult = await roiResponse.json();
+        setRoiData(roiResult.data);
       }
     } catch (err: any) {
       console.error('Erro ao buscar insights:', err);
@@ -212,6 +225,31 @@ export function AdsDashboardClient({
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ROI Real - Ads vs Carrinhos Recuperados */}
+      {roiData && (
+        <div className="space-y-6">
+          <div className="rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+            <h3 className="text-lg font-semibold text-blue-900">
+              💰 ROI Real: Gasto em Ads vs Receita Recuperada
+            </h3>
+            <p className="mt-1 text-sm text-blue-700">
+              Cruzamento de campanhas Meta Ads com carrinhos abandonados recuperados. Veja o retorno real do seu investimento!
+            </p>
+          </div>
+
+          <ROISummary roiData={roiData} />
+
+          {roiData.campaigns && roiData.campaigns.length > 0 && (
+            <div className="rounded-lg border border-gray-200 bg-white p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                ROI por Campanha ({roiData.campaigns.length})
+              </h3>
+              <ROICampaignsTable campaigns={roiData.campaigns} />
+            </div>
+          )}
         </div>
       )}
 
