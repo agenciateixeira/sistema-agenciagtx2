@@ -30,9 +30,7 @@ export function MetaCAPIStatus({ metaConnection }: MetaCAPIStatusProps) {
   }
 
   // Token expirado
-  const tokenExpired = metaConnection.token_expires_at
-    ? new Date(metaConnection.token_expires_at) < new Date()
-    : false;
+  const tokenExpired = new Date(metaConnection.token_expires_at) < new Date();
   if (tokenExpired || metaConnection.status !== 'connected') {
     return (
       <div className="rounded-lg border-2 border-yellow-200 bg-yellow-50 p-6">
