@@ -1,4 +1,4 @@
-import { LayoutDashboard, FileBarChart2, BellRing, Plug, Users2, UserRound, BookOpen, ShoppingCart, TrendingUp, Link2, Send } from 'lucide-react';
+import { LayoutDashboard, FileBarChart2, BellRing, Plug, Users2, UserRound, BookOpen, ShoppingCart, TrendingUp, Link2, Send, Bell } from 'lucide-react';
 
 export const appNavigation = [
   { name: 'Visão geral', href: '/dashboard', icon: LayoutDashboard },
@@ -7,6 +7,7 @@ export const appNavigation = [
   { name: 'Meta Ads Dashboard', href: '/ads-dashboard', icon: TrendingUp },
   { name: 'UTM Tracking', href: '/utm-tracking', icon: Link2 },
   { name: 'Meta CAPI', href: '/meta-capi', icon: Send },
+  { name: 'Alertas', href: '/alerts', icon: Bell },
   { name: 'Relatórios', href: '/reports', icon: FileBarChart2 },
   { name: 'Notificações', href: '/notifications', icon: BellRing },
   { name: 'Equipe', href: '/team', icon: Users2 },
