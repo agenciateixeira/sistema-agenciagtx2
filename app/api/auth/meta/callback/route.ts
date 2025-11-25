@@ -153,8 +153,8 @@ export async function GET(request: NextRequest) {
       business_ids: businesses.map((b) => ({ id: b.id, name: b.name })),
       ad_account_ids: adAccountIds,
       pixel_ids: pixelIds,
-      primary_ad_account_id: adAccountIds[0]?.account_id || null,
-      primary_pixel_id: pixelIds[0]?.id || null,
+      primary_ad_account_id: null, // Usuário vai escolher no dashboard
+      primary_pixel_id: null, // Usuário vai escolher no dashboard
       status: 'connected',
       last_sync_at: new Date().toISOString(),
     };
