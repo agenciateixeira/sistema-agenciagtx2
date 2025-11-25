@@ -8,6 +8,7 @@ interface MetaConnection {
   meta_user_name: string;
   status: 'connected' | 'expired' | 'disconnected' | 'error';
   primary_ad_account_id: string | null;
+  primary_pixel_id: string | null;
   ad_account_ids: any[];
   token_expires_at: string;
   last_sync_at: string;
@@ -23,8 +24,10 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
   const [disconnecting, setDisconnecting] = useState(false);
   const [showAccountManagement, setShowAccountManagement] = useState(false);
   const [availableAccounts, setAvailableAccounts] = useState<any[]>([]);
+  const [availablePixels, setAvailablePixels] = useState<any[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [changingPrimary, setChangingPrimary] = useState(false);
+  const [selectedPixels, setSelectedPixels] = useState<{[key: string]: string}>({});
 
   const handleConnect = () => {
     setLoading(true);
@@ -70,6 +73,14 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
       if (response.ok) {
         const data = await response.json();
         setAvailableAccounts(data.accounts || []);
+        setAvailablePixels(data.pixels || []);
+
+        // Inicializar selectedPixels com o pixel atual se houver
+        if (connection.primary_pixel_id) {
+          setSelectedPixels({
+            [connection.primary_ad_account_id || '']: connection.primary_pixel_id
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading accounts:', error);
@@ -79,12 +90,22 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
   };
 
   const handleSetPrimaryAccount = async (accountId: string) => {
+    const pixelId = selectedPixels[accountId];
+
+    if (!pixelId) {
+      alert('Por favor, selecione um pixel para esta conta antes de definir como principal.');
+      return;
+    }
+
     setChangingPrimary(true);
     try {
       const response = await fetch('/api/meta/set-primary-account', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ad_account_id: accountId }),
+        body: JSON.stringify({
+          ad_account_id: accountId,
+          pixel_id: pixelId
+        }),
       });
 
       if (!response.ok) throw new Error('Failed to set primary account');
@@ -195,6 +216,15 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
             </div>
           )}
 
+          {connection.primary_pixel_id && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Pixel Ativo:</span>
+              <span className="font-mono text-xs text-gray-700">
+                {connection.primary_pixel_id}
+              </span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600">Token expira em:</span>
             <span className="font-medium text-gray-900">
@@ -246,50 +276,100 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
                     const accountId = account.account_id || account.id.replace('act_', '');
                     const isPrimary = connection.primary_ad_account_id === accountId;
 
+                    // Filtrar pixels pelo business_id da conta
+                    const accountPixels = availablePixels.filter(
+                      (pixel) => pixel.business_id === account.business_id
+                    );
+
                     return (
                       <div
                         key={account.id}
-                        className={`flex items-center justify-between rounded-lg border-2 p-3 transition ${
+                        className={`rounded-lg border-2 p-4 transition ${
                           isPrimary
                             ? 'border-blue-500 bg-blue-50'
                             : 'border-gray-200 bg-white hover:border-gray-300'
                         }`}
                       >
-                        <div className="flex items-center gap-3 flex-1">
-                          {isPrimary && (
-                            <Star className="h-4 w-4 flex-shrink-0 text-blue-600 fill-blue-600" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm font-medium truncate ${
-                              isPrimary ? 'text-blue-900' : 'text-gray-900'
-                            }`}>
-                              {account.name}
-                            </p>
-                            <p className="text-xs text-gray-500 font-mono mt-0.5">
-                              ID: {accountId}
-                            </p>
-                            {account.currency && (
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                Moeda: {account.currency}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 flex-1 min-w-0">
+                            {isPrimary && (
+                              <Star className="h-4 w-4 flex-shrink-0 text-blue-600 fill-blue-600 mt-0.5" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-medium truncate ${
+                                isPrimary ? 'text-blue-900' : 'text-gray-900'
+                              }`}>
+                                {account.name}
                               </p>
+                              <p className="text-xs text-gray-500 font-mono mt-0.5">
+                                ID: {accountId}
+                              </p>
+                              {account.currency && (
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                  Moeda: {account.currency}
+                                </p>
+                              )}
+
+                              {/* Seletor de Pixel */}
+                              <div className="mt-3">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                  Pixel do Meta:
+                                </label>
+                                {accountPixels.length > 0 ? (
+                                  <select
+                                    value={selectedPixels[accountId] || ''}
+                                    onChange={(e) => setSelectedPixels({
+                                      ...selectedPixels,
+                                      [accountId]: e.target.value
+                                    })}
+                                    disabled={isPrimary}
+                                    className={`w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 ${
+                                      isPrimary
+                                        ? 'border-blue-300 bg-blue-100 text-blue-900'
+                                        : 'border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500'
+                                    }`}
+                                  >
+                                    <option value="">Selecione um pixel</option>
+                                    {accountPixels.map((pixel) => (
+                                      <option key={pixel.id} value={pixel.id}>
+                                        {pixel.name} (ID: {pixel.id})
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <p className="text-xs text-gray-500 italic">
+                                    Nenhum pixel disponível para esta conta
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex-shrink-0">
+                            {!isPrimary && (
+                              <button
+                                onClick={() => handleSetPrimaryAccount(accountId)}
+                                disabled={changingPrimary || !selectedPixels[accountId]}
+                                className="rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {changingPrimary ? 'Salvando...' : 'Definir como principal'}
+                              </button>
+                            )}
+
+                            {isPrimary && (
+                              <span className="inline-block rounded-full bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700">
+                                Principal
+                              </span>
                             )}
                           </div>
                         </div>
 
-                        {!isPrimary && (
-                          <button
-                            onClick={() => handleSetPrimaryAccount(accountId)}
-                            disabled={changingPrimary}
-                            className="ml-3 flex-shrink-0 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
-                          >
-                            {changingPrimary ? 'Salvando...' : 'Definir como principal'}
-                          </button>
-                        )}
-
-                        {isPrimary && (
-                          <span className="ml-3 flex-shrink-0 rounded-full bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700">
-                            Principal
-                          </span>
+                        {isPrimary && connection.primary_pixel_id && (
+                          <div className="mt-3 rounded-lg bg-blue-100 px-3 py-2">
+                            <p className="text-xs text-blue-800">
+                              <span className="font-medium">Pixel ativo:</span> {connection.primary_pixel_id}
+                            </p>
+                          </div>
                         )}
                       </div>
                     );
