@@ -6,6 +6,7 @@ import { appNavigation } from '@/lib/navigation';
 import { Logo } from '@/components/logo';
 import { cn } from '@/lib/utils';
 import { ShieldCheck } from 'lucide-react';
+import { AlertsBadge } from '@/components/alerts/alerts-badge';
 
 interface SidebarProps {
   isMobileMenuOpen?: boolean;
@@ -52,7 +53,8 @@ export function Sidebar({ isMobileMenuOpen, onClose }: SidebarProps) {
                 )}
               >
                 <item.icon className={cn('h-5 w-5', active ? 'text-brand-600' : 'text-gray-400')} />
-                <span>{item.name}</span>
+                <span className="flex-1">{item.name}</span>
+                {item.showBadge && <AlertsBadge />}
               </Link>
             );
           })}

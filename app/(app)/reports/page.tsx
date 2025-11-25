@@ -37,6 +37,13 @@ export default async function ReportsPage() {
     .eq('user_id', user.id)
     .single();
 
+  // Buscar dados do profile (logo e nome da empresa)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('report_logo_url, report_company_name')
+    .eq('id', user.id)
+    .single();
+
   return (
     <div className="space-y-6">
       <div>
@@ -49,6 +56,8 @@ export default async function ReportsPage() {
       <ReportsClient
         userId={user.id}
         metaConnection={metaConnection ? { ...metaConnection, user_id: user.id } : null}
+        reportLogoUrl={profile?.report_logo_url || null}
+        reportCompanyName={profile?.report_company_name || null}
       />
     </div>
   );

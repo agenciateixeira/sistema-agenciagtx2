@@ -18,13 +18,17 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { exportToCSV, prepareInsightsForCSV, prepareCampaignsForCSV } from '@/lib/export-utils';
+import { LogoUpload } from './logo-upload';
+import Image from 'next/image';
 
 interface ReportsClientProps {
   userId: string;
   metaConnection: any;
+  reportLogoUrl?: string | null;
+  reportCompanyName?: string | null;
 }
 
-export function ReportsClient({ userId, metaConnection }: ReportsClientProps) {
+export function ReportsClient({ userId, metaConnection, reportLogoUrl, reportCompanyName }: ReportsClientProps) {
   const [step, setStep] = useState<'configure' | 'preview'>('configure');
 
   // Configuração do relatório
@@ -390,6 +394,22 @@ export function ReportsClient({ userId, metaConnection }: ReportsClientProps) {
             </div>
           </div>
 
+          {/* Logo e Branding */}
+          <div className="rounded-lg border border-gray-200 bg-white p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="h-5 w-5 text-gray-600" />
+              <h3 className="font-semibold text-gray-900">Logo e Branding</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Configure a logo e nome da empresa para personalizar seus relatórios
+            </p>
+            <LogoUpload
+              userId={userId}
+              currentLogoUrl={reportLogoUrl}
+              currentCompanyName={reportCompanyName}
+            />
+          </div>
+
           {/* Botão gerar preview */}
           <button
             onClick={handleGeneratePreview}
@@ -413,6 +433,31 @@ export function ReportsClient({ userId, metaConnection }: ReportsClientProps) {
         <div className="space-y-6">
           {/* Preview */}
           <div className="rounded-lg border border-gray-200 bg-white p-6">
+            {/* Logo Header */}
+            {(reportLogoUrl || reportCompanyName) && (
+              <div className="mb-6 pb-6 border-b border-gray-200">
+                <div className="flex items-center gap-4">
+                  {reportLogoUrl && (
+                    <div className="relative h-16 w-32">
+                      <Image
+                        src={reportLogoUrl}
+                        alt="Logo"
+                        fill
+                        className="object-contain"
+                        unoptimized
+                      />
+                    </div>
+                  )}
+                  {reportCompanyName && (
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{reportCompanyName}</h2>
+                      <p className="text-sm text-gray-600">Relatório de Performance Meta Ads</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Preview do Relatório
             </h3>

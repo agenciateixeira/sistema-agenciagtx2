@@ -7,7 +7,7 @@ export const appNavigation = [
   { name: 'Meta Ads Dashboard', href: '/ads-dashboard', icon: TrendingUp },
   { name: 'UTM Tracking', href: '/utm-tracking', icon: Link2 },
   { name: 'Meta CAPI', href: '/meta-capi', icon: Send },
-  { name: 'Alertas', href: '/alerts', icon: Bell },
+  { name: 'Alertas', href: '/alerts', icon: Bell, showBadge: true },
   { name: 'Relatórios', href: '/reports', icon: FileBarChart2 },
   { name: 'Notificações', href: '/notifications', icon: BellRing },
   { name: 'Equipe', href: '/team', icon: Users2 },
