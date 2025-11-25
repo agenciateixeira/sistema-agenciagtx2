@@ -59,11 +59,46 @@ export async function POST(
       'orders/create',
     ];
 
+    // Primeiro, buscar webhooks existentes
+    console.log('🔍 Buscando webhooks existentes...');
+    const existingResponse = await fetch(
+      `https://${shopDomain}/admin/api/2024-10/webhooks.json`,
+      {
+        headers: {
+          'X-Shopify-Access-Token': integration.api_key,
+        },
+      }
+    );
+
+    const existingData = await existingResponse.json();
+    const existingWebhooks = existingData.webhooks || [];
+
+    console.log(`📋 Encontrados ${existingWebhooks.length} webhooks existentes`);
+    existingWebhooks.forEach((w: any) => {
+      console.log(`   - ${w.topic} -> ${w.address} (ID: ${w.id})`);
+    });
+
     const results = [];
     const errors = [];
 
     for (const topic of topics) {
       try {
+        // Verificar se já existe um webhook para este tópico e URL
+        const existingWebhook = existingWebhooks.find(
+          (w: any) => w.topic === topic && w.address === webhookUrl
+        );
+
+        if (existingWebhook) {
+          console.log(`✅ Webhook ${topic} já existe (ID: ${existingWebhook.id})`);
+          results.push({
+            topic,
+            id: existingWebhook.id,
+            address: existingWebhook.address,
+            status: 'already_exists',
+          });
+          continue;
+        }
+
         console.log(`📡 Criando webhook: ${topic}`);
 
         const response = await fetch(
@@ -100,6 +135,7 @@ export async function POST(
           topic,
           id: data.webhook?.id,
           address: data.webhook?.address,
+          status: 'created',
         });
       } catch (error: any) {
         console.error(`❌ Erro ao criar webhook ${topic}:`, error);
@@ -116,11 +152,15 @@ export async function POST(
       .update({ last_sync_at: new Date().toISOString() })
       .eq('id', integrationId);
 
-    if (errors.length > 0) {
+    // Contar quantos foram criados vs quantos já existiam
+    const created = results.filter((r: any) => r.status === 'created').length;
+    const alreadyExists = results.filter((r: any) => r.status === 'already_exists').length;
+
+    if (errors.length > 0 && results.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Alguns webhooks falharam',
+          message: 'Todos os webhooks falharam',
           results,
           errors,
         },
@@ -128,10 +168,26 @@ export async function POST(
       );
     }
 
+    let message = '';
+    if (created > 0 && alreadyExists > 0) {
+      message = `${created} webhooks criados, ${alreadyExists} já existiam`;
+    } else if (created > 0) {
+      message = `${created} webhooks criados com sucesso`;
+    } else if (alreadyExists > 0) {
+      message = `${alreadyExists} webhooks já configurados`;
+    }
+
+    if (errors.length > 0) {
+      message += `, ${errors.length} falharam`;
+    }
+
     return NextResponse.json({
       success: true,
-      message: `${results.length} webhooks configurados com sucesso`,
+      message,
       webhooks: results,
+      created,
+      alreadyExists,
+      errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error: any) {
     console.error('❌ Erro ao configurar webhooks:', error);

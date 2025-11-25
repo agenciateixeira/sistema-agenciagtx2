@@ -126,14 +126,28 @@ export async function POST(
     for (const checkout of allCheckouts) {
       try {
         console.log(`\n🔍 Processando checkout ${checkout.id}:`);
-        console.log(`   - Email: ${checkout.email || checkout.customer?.email || 'N/A'}`);
+
+        // Log completo da estrutura para debug
+        console.log('📦 Estrutura completa do checkout:', JSON.stringify(checkout, null, 2));
+
+        // Tentar múltiplas formas de extrair o email
+        const customerEmail =
+          checkout.email ||
+          checkout.customer?.email ||
+          checkout.billing_address?.email ||
+          checkout.shipping_address?.email ||
+          checkout.customer_locale?.email;
+
+        console.log(`   - Email encontrado: ${customerEmail || 'N/A'}`);
+        console.log(`   - checkout.email: ${checkout.email || 'N/A'}`);
+        console.log(`   - checkout.customer?.email: ${checkout.customer?.email || 'N/A'}`);
+        console.log(`   - checkout.billing_address?.email: ${checkout.billing_address?.email || 'N/A'}`);
         console.log(`   - Customer: ${checkout.customer?.first_name || 'N/A'}`);
         console.log(`   - Total: ${checkout.total_price || '0'}`);
         console.log(`   - Created: ${checkout.created_at}`);
         console.log(`   - Completed: ${checkout.completed_at || 'N/A'}`);
 
         // Verificar se o checkout tem email
-        const customerEmail = checkout.email || checkout.customer?.email;
         if (!customerEmail) {
           const reason = `Checkout ${checkout.id}: sem email`;
           console.log(`   ⏭️  PULADO: ${reason}`);
