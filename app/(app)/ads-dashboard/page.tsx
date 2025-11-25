@@ -7,6 +7,10 @@ import { AccountSetup } from '@/components/ads-dashboard/account-setup';
 import { AlertCircle, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
 
+// FORÇAR PÁGINA DINÂMICA (SEM CACHE)
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 async function getSupabaseServer() {
   const cookieStore = cookies();
 
