@@ -14,7 +14,9 @@ import {
   Settings,
   Trash2,
   Power,
+  History,
 } from 'lucide-react';
+import { AlertsHistory } from './alerts-history';
 
 interface AlertConfig {
   id: string;
@@ -108,6 +110,7 @@ const ALERT_TYPES = [
 ];
 
 export function AlertsClient({ userId }: AlertsClientProps) {
+  const [activeTab, setActiveTab] = useState<'config' | 'history'>('config');
   const [alerts, setAlerts] = useState<AlertConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -187,22 +190,56 @@ export function AlertsClient({ userId }: AlertsClientProps) {
 
   return (
     <div className="space-y-6">
-      {/* Header com botão criar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Bell className="h-5 w-5 text-gray-600" />
-          <span className="text-sm font-medium text-gray-700">
-            {alerts.length} {alerts.length === 1 ? 'alerta configurado' : 'alertas configurados'}
-          </span>
-        </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Criar Alerta
-        </button>
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4" aria-label="Tabs">
+          <button
+            onClick={() => setActiveTab('config')}
+            className={`border-b-2 px-4 py-3 text-sm font-medium transition ${
+              activeTab === 'config'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Configurações
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`border-b-2 px-4 py-3 text-sm font-medium transition ${
+              activeTab === 'history'
+                ? 'border-brand-600 text-brand-600'
+                : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Histórico
+            </div>
+          </button>
+        </nav>
       </div>
+
+      {activeTab === 'config' ? (
+        <>
+          {/* Header com botão criar */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {alerts.length} {alerts.length === 1 ? 'alerta configurado' : 'alertas configurados'}
+              </span>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4" />
+              Criar Alerta
+            </button>
+          </div>
 
       {/* Lista de Alertas */}
       {alerts.length === 0 ? (
@@ -294,6 +331,10 @@ export function AlertsClient({ userId }: AlertsClientProps) {
             );
           })}
         </div>
+      )}
+        </>
+      ) : (
+        <AlertsHistory userId={userId} />
       )}
 
       {/* Modal de Criar Alerta */}
