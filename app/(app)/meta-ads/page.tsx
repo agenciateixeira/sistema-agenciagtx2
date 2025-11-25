@@ -143,13 +143,24 @@ export default async function MetaAdsPage() {
     (c) => c.status === 'recovered' && !c.capi_purchase_sent
   ).length || 0;
 
+  // Serializar metaConnection para passar para client components
+  const metaConnectionData = {
+    user_id: metaConnection.user_id,
+    meta_user_name: metaConnection.meta_user_name,
+    ad_account_ids: metaConnection.ad_account_ids,
+    primary_ad_account_id: metaConnection.primary_ad_account_id,
+    primary_pixel_id: metaConnection.primary_pixel_id,
+    status: metaConnection.status,
+    token_expires_at: metaConnection.token_expires_at,
+  };
+
   // Definir abas
   const tabs = [
     {
       id: 'overview',
       label: 'Visão Geral',
       icon: LayoutDashboard,
-      content: <OverviewTab metaConnection={metaConnection} />,
+      content: <OverviewTab metaConnection={metaConnectionData} />,
     },
     {
       id: 'campaigns',
@@ -163,7 +174,7 @@ export default async function MetaAdsPage() {
       icon: Send,
       content: (
         <CAPITab
-          metaConnection={metaConnection}
+          metaConnection={metaConnectionData}
           totalRecovered={totalRecovered}
           purchaseEventsSent={purchaseEventsSent}
           pendingEvents={pendingEvents}
