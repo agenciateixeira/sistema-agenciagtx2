@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle, XCircle, Trash2, RefreshCw, Edit, Webhook } from 'lucide-react';
+import { CheckCircle, XCircle, Trash2, RefreshCw, Edit, Webhook, Download } from 'lucide-react';
 import Image from 'next/image';
 import toast from 'react-hot-toast';
 import { deleteIntegration, testIntegration } from '@/app/actions/integrations';
@@ -29,6 +29,7 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
   const [testing, setTesting] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [configuringWebhooks, setConfiguringWebhooks] = useState<string | null>(null);
+  const [syncingCarts, setSyncingCarts] = useState<string | null>(null);
   const [editingIntegration, setEditingIntegration] = useState<Integration | null>(null);
 
   async function handleTest(id: string) {
@@ -90,6 +91,39 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
       toast.error('Erro ao configurar webhooks', { id: toastId });
     } finally {
       setConfiguringWebhooks(null);
+    }
+  }
+
+  async function handleSyncCarts(id: string, platform: string) {
+    if (platform !== 'shopify') {
+      toast.error('Sincronização disponível apenas para Shopify');
+      return;
+    }
+
+    setSyncingCarts(id);
+    const toastId = toast.loading('Sincronizando carrinhos abandonados...');
+
+    try {
+      const response = await fetch(`/api/integrations/${id}/sync-carts`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(
+          `${data.imported} carrinhos importados! ${data.errors > 0 ? `(${data.errors} erros)` : ''}`,
+          { id: toastId, duration: 5000 }
+        );
+        window.location.reload();
+      } else {
+        toast.error(data.error || 'Erro ao sincronizar carrinhos', { id: toastId });
+      }
+    } catch (error: any) {
+      console.error('Erro ao sincronizar carrinhos:', error);
+      toast.error('Erro ao sincronizar carrinhos', { id: toastId });
+    } finally {
+      setSyncingCarts(null);
     }
   }
 
@@ -181,14 +215,24 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
 
           <div className="flex items-center gap-2">
             {integration.platform === 'shopify' && (
-              <button
-                onClick={() => handleConfigureWebhooks(integration.id, integration.platform)}
-                disabled={configuringWebhooks === integration.id}
-                className="rounded-lg p-2 text-purple-600 hover:bg-purple-50 disabled:opacity-50"
-                title="Configurar Webhooks"
-              >
-                <Webhook className={`h-4 w-4 ${configuringWebhooks === integration.id ? 'animate-pulse' : ''}`} />
-              </button>
+              <>
+                <button
+                  onClick={() => handleSyncCarts(integration.id, integration.platform)}
+                  disabled={syncingCarts === integration.id}
+                  className="rounded-lg p-2 text-green-600 hover:bg-green-50 disabled:opacity-50"
+                  title="Importar carrinhos abandonados existentes"
+                >
+                  <Download className={`h-4 w-4 ${syncingCarts === integration.id ? 'animate-bounce' : ''}`} />
+                </button>
+                <button
+                  onClick={() => handleConfigureWebhooks(integration.id, integration.platform)}
+                  disabled={configuringWebhooks === integration.id}
+                  className="rounded-lg p-2 text-purple-600 hover:bg-purple-50 disabled:opacity-50"
+                  title="Configurar Webhooks"
+                >
+                  <Webhook className={`h-4 w-4 ${configuringWebhooks === integration.id ? 'animate-pulse' : ''}`} />
+                </button>
+              </>
             )}
 
             <button
