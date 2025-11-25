@@ -18,6 +18,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { exportToCSV, prepareInsightsForCSV, prepareCampaignsForCSV } from '@/lib/export-utils';
+import { generateReportPDF, downloadPDF } from '@/lib/pdf-utils';
 import { LogoUpload } from './logo-upload';
 import Image from 'next/image';
 
@@ -181,6 +182,30 @@ export function ReportsClient({ userId, metaConnection, reportLogoUrl, reportCom
       toast.error('Erro ao gerar preview', { id: toastId });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!reportData) return;
+
+    const toastId = toast.loading('Gerando PDF...');
+
+    try {
+      const pdf = await generateReportPDF(reportData, selectedSections, {
+        companyName: reportCompanyName || undefined,
+        logoUrl: reportLogoUrl || undefined,
+        datePreset,
+      });
+
+      const now = new Date().toISOString().split('T')[0];
+      const filename = `relatorio-meta-ads-${now}.pdf`;
+
+      downloadPDF(pdf, filename);
+
+      toast.success('PDF gerado com sucesso!', { id: toastId });
+    } catch (error: any) {
+      console.error('Error exporting PDF:', error);
+      toast.error(error.message || 'Erro ao gerar PDF', { id: toastId });
     }
   };
 
@@ -552,11 +577,11 @@ export function ReportsClient({ userId, metaConnection, reportLogoUrl, reportCom
             </button>
 
             <button
-              onClick={() => toast('Exportação PDF em breve!', { icon: '📄' })}
+              onClick={handleExportPDF}
               className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
             >
               <Download className="h-5 w-5" />
-              Exportar PDF (em breve)
+              Exportar PDF
             </button>
 
             <button
