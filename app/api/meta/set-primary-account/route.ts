@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { ad_account_id } = body;
+    const { ad_account_id, pixel_id } = body;
 
     if (!ad_account_id) {
       return NextResponse.json({ error: 'ad_account_id is required' }, { status: 400 });
@@ -40,10 +40,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Atualizar primary_ad_account_id na meta_connections
+    // Atualizar primary_ad_account_id e primary_pixel_id na meta_connections
+    const updateData: any = { primary_ad_account_id: ad_account_id };
+    if (pixel_id) {
+      updateData.primary_pixel_id = pixel_id;
+    }
+
     const { error: updateError } = await supabase
       .from('meta_connections')
-      .update({ primary_ad_account_id: ad_account_id })
+      .update(updateData)
       .eq('user_id', user.id);
 
     if (updateError) {
@@ -51,11 +56,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: updateError.message }, { status: 500 });
     }
 
-    console.log(`✅ Primary ad account set to ${ad_account_id} for user ${user.id}`);
+    console.log(`✅ Primary account set to ${ad_account_id}${pixel_id ? `, pixel ${pixel_id}` : ''} for user ${user.id}`);
 
     return NextResponse.json({
       success: true,
       ad_account_id,
+      pixel_id: pixel_id || null,
     });
   } catch (error: any) {
     console.error('Error setting primary account:', error);

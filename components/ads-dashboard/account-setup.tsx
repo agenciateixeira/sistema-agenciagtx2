@@ -11,6 +11,7 @@ interface AccountSetupProps {
 
 export function AccountSetup({ userId, primaryAccountId }: AccountSetupProps) {
   const [accounts, setAccounts] = useState<any[]>([]);
+  const [pixels, setPixels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export function AccountSetup({ userId, primaryAccountId }: AccountSetupProps) {
 
       const data = await response.json();
       setAccounts(data.accounts || []);
+      setPixels(data.pixels || []);
     } catch (error) {
       console.error('Error loading ad accounts:', error);
     } finally {
@@ -55,7 +57,9 @@ export function AccountSetup({ userId, primaryAccountId }: AccountSetupProps) {
   return (
     <AccountSelector
       accounts={accounts}
+      pixels={pixels}
       currentAccountId={primaryAccountId}
+      currentPixelId={undefined}
       onSelectAccount={() => {}}
     />
   );
