@@ -49,6 +49,12 @@ export default async function IntegrationsPage() {
     .eq('user_id', user.id)
     .single();
 
+  // Adicionar user_id à conexão se existir
+  const metaConnectionWithUserId = metaConnection ? {
+    ...metaConnection,
+    user_id: user.id,
+  } : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -68,7 +74,7 @@ export default async function IntegrationsPage() {
           title="📊 Meta Ads (Facebook/Instagram)"
           description="Conecte sua conta de anúncios e veja ROI completo"
         />
-        <MetaAdsCard connection={metaConnection} />
+        <MetaAdsCard connection={metaConnectionWithUserId} />
       </div>
 
       {/* Lista de Integrações E-commerce */}

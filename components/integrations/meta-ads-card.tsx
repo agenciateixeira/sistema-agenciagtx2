@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle, AlertCircle, ExternalLink, Loader2, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { CheckCircle, AlertCircle, ExternalLink, Loader2, Trash2, Settings, ChevronDown, ChevronUp, Star } from 'lucide-react';
 
 interface MetaConnection {
   id: string;
@@ -11,6 +11,7 @@ interface MetaConnection {
   ad_account_ids: any[];
   token_expires_at: string;
   last_sync_at: string;
+  user_id: string;
 }
 
 interface MetaAdsCardProps {
@@ -20,6 +21,10 @@ interface MetaAdsCardProps {
 export function MetaAdsCard({ connection }: MetaAdsCardProps) {
   const [loading, setLoading] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [showAccountManagement, setShowAccountManagement] = useState(false);
+  const [availableAccounts, setAvailableAccounts] = useState<any[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+  const [changingPrimary, setChangingPrimary] = useState(false);
 
   const handleConnect = () => {
     setLoading(true);
@@ -46,6 +51,50 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
       console.error('Error disconnecting:', error);
       alert('Erro ao desconectar. Tente novamente.');
       setDisconnecting(false);
+    }
+  };
+
+  // Carregar contas disponíveis quando expandir gerenciamento
+  useEffect(() => {
+    if (showAccountManagement && connection && availableAccounts.length === 0) {
+      loadAvailableAccounts();
+    }
+  }, [showAccountManagement]);
+
+  const loadAvailableAccounts = async () => {
+    if (!connection) return;
+
+    setLoadingAccounts(true);
+    try {
+      const response = await fetch(`/api/meta/ad-accounts?user_id=${connection.user_id}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableAccounts(data.accounts || []);
+      }
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    } finally {
+      setLoadingAccounts(false);
+    }
+  };
+
+  const handleSetPrimaryAccount = async (accountId: string) => {
+    setChangingPrimary(true);
+    try {
+      const response = await fetch('/api/meta/set-primary-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ad_account_id: accountId }),
+      });
+
+      if (!response.ok) throw new Error('Failed to set primary account');
+
+      // Recarregar página para atualizar UI
+      window.location.href = '/integrations';
+    } catch (error) {
+      console.error('Error setting primary account:', error);
+      alert('Erro ao alterar conta principal. Tente novamente.');
+      setChangingPrimary(false);
     }
   };
 
@@ -159,6 +208,98 @@ export function MetaAdsCard({ connection }: MetaAdsCardProps) {
               <span className="text-gray-700">
                 {formatDate(connection.last_sync_at)}
               </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Gerenciamento de Contas */}
+      {connection && connection.status === 'connected' && connection.ad_account_ids && connection.ad_account_ids.length > 0 && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowAccountManagement(!showAccountManagement)}
+            className="flex w-full items-center justify-between rounded-lg border border-gray-200 bg-white p-3 text-sm font-medium text-gray-900 transition hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-gray-600" />
+              <span>Gerenciar Contas de Anúncios</span>
+            </div>
+            {showAccountManagement ? (
+              <ChevronUp className="h-4 w-4 text-gray-600" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-gray-600" />
+            )}
+          </button>
+
+          {showAccountManagement && (
+            <div className="mt-3 rounded-lg border border-gray-200 bg-white p-4">
+              {loadingAccounts ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                </div>
+              ) : availableAccounts.length > 0 ? (
+                <div className="space-y-3">
+                  <p className="text-xs text-gray-600 mb-3">
+                    Selecione qual conta será usada como padrão no dashboard:
+                  </p>
+                  {availableAccounts.map((account) => {
+                    const accountId = account.account_id || account.id.replace('act_', '');
+                    const isPrimary = connection.primary_ad_account_id === accountId;
+
+                    return (
+                      <div
+                        key={account.id}
+                        className={`flex items-center justify-between rounded-lg border-2 p-3 transition ${
+                          isPrimary
+                            ? 'border-blue-500 bg-blue-50'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          {isPrimary && (
+                            <Star className="h-4 w-4 flex-shrink-0 text-blue-600 fill-blue-600" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${
+                              isPrimary ? 'text-blue-900' : 'text-gray-900'
+                            }`}>
+                              {account.name}
+                            </p>
+                            <p className="text-xs text-gray-500 font-mono mt-0.5">
+                              ID: {accountId}
+                            </p>
+                            {account.currency && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                Moeda: {account.currency}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {!isPrimary && (
+                          <button
+                            onClick={() => handleSetPrimaryAccount(accountId)}
+                            disabled={changingPrimary}
+                            className="ml-3 flex-shrink-0 rounded-lg border border-blue-300 bg-white px-3 py-1.5 text-xs font-medium text-blue-700 transition hover:bg-blue-50 disabled:opacity-50"
+                          >
+                            {changingPrimary ? 'Salvando...' : 'Definir como principal'}
+                          </button>
+                        )}
+
+                        {isPrimary && (
+                          <span className="ml-3 flex-shrink-0 rounded-full bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-700">
+                            Principal
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-center text-sm text-gray-500 py-4">
+                  Nenhuma conta disponível
+                </p>
+              )}
             </div>
           )}
         </div>
