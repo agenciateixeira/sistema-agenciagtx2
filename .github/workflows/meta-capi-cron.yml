@@ -1,0 +1,32 @@
+name: Meta CAPI Event Processing
+
+on:
+  schedule:
+    # Roda a cada 5 minutos
+    - cron: '*/5 * * * *'
+  # Permite execução manual para testes
+  workflow_dispatch:
+
+jobs:
+  process-capi-events:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Process pending CAPI events
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST "${{ secrets.APP_URL }}/api/meta/capi/process-pending" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "📊 Response Status: $http_code"
+          echo "📄 Response Body: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Error: HTTP $http_code"
+            exit 1
+          fi
+
+          echo "✅ CAPI event processing completed successfully"
