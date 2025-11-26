@@ -1,7 +1,15 @@
 'use client';
 
-import { RecoveryStats } from './recovery-stats';
+import { RecoveryMetricsCards } from './recovery-metrics-cards';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
+interface CartMetrics {
+  total: number;
+  totalValue: number;
+  recovered: number;
+  recoveredValue: number;
+  withEmail: number;
+}
 
 interface RecoveryOverviewProps {
   stats: Array<{
@@ -12,9 +20,34 @@ interface RecoveryOverviewProps {
     conversion_value: number | null;
     created_at: string;
   }>;
+  cartMetrics: CartMetrics;
 }
 
-export function RecoveryOverview({ stats }: RecoveryOverviewProps) {
+export function RecoveryOverview({ stats, cartMetrics }: RecoveryOverviewProps) {
+  // Calcular estatísticas de email
+  const emailsSent = stats.length;
+  const emailsOpened = stats.filter(s => s.opened).length;
+  const emailsClicked = stats.filter(s => s.clicked).length;
+  const conversions = stats.filter(s => s.converted).length;
+  const totalRevenue = stats
+    .filter(s => s.converted && s.conversion_value)
+    .reduce((sum, s) => sum + (s.conversion_value || 0), 0);
+
+  const openRate = emailsSent > 0 ? ((emailsOpened / emailsSent) * 100).toFixed(1) : '0.0';
+  const clickRate = emailsSent > 0 ? ((emailsClicked / emailsSent) * 100).toFixed(1) : '0.0';
+  const conversionRate = emailsSent > 0 ? ((conversions / emailsSent) * 100).toFixed(1) : '0.0';
+
+  const emailStats = {
+    sent: emailsSent,
+    opened: emailsOpened,
+    clicked: emailsClicked,
+    converted: conversions,
+    revenue: totalRevenue,
+    openRate: parseFloat(openRate),
+    clickRate: parseFloat(clickRate),
+    conversionRate: parseFloat(conversionRate),
+  };
+
   // Calcular estatísticas dos últimos 7 dias vs 7 dias anteriores
   const now = new Date();
   const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -72,7 +105,7 @@ export function RecoveryOverview({ stats }: RecoveryOverviewProps) {
   return (
     <div className="space-y-6">
       {/* Estatísticas Principais */}
-      <RecoveryStats stats={stats} />
+      <RecoveryMetricsCards cartMetrics={cartMetrics} emailStats={emailStats} />
 
       {/* Comparativo Semanal */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">

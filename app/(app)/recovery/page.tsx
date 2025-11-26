@@ -65,6 +65,17 @@ export default async function RecoveryPage() {
     .gte('abandoned_at', thirtyDaysAgo.toISOString())
     .order('abandoned_at', { ascending: false });
 
+  // Calcular métricas de carrinhos
+  const cartMetrics = {
+    total: abandonedCarts?.length || 0,
+    totalValue: abandonedCarts?.reduce((sum, cart) => sum + cart.total_value, 0) || 0,
+    recovered: abandonedCarts?.filter(cart => cart.status === 'recovered').length || 0,
+    recoveredValue: abandonedCarts
+      ?.filter(cart => cart.status === 'recovered')
+      .reduce((sum, cart) => sum + (cart.recovered_value || 0), 0) || 0,
+    withEmail: abandonedCarts?.filter(cart => !cart.customer_email.includes('sem-email')).length || 0,
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -76,7 +87,7 @@ export default async function RecoveryPage() {
 
       <RecoveryTabs defaultTab="overview">
         <TabPanel id="overview">
-          <RecoveryOverview stats={stats || []} />
+          <RecoveryOverview stats={stats || []} cartMetrics={cartMetrics} />
         </TabPanel>
 
         <TabPanel id="carts">
