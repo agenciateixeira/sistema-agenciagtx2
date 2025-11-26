@@ -160,7 +160,7 @@ export async function POST(
         const { error: cartError } = await supabase
           .from('abandoned_carts')
           .upsert({
-            id: `shopify_${checkoutId}`,
+            platform_cart_id: `shopify_${checkoutId}`, // ID externo único
             user_id: integration.user_id,
             integration_id: integrationId,
             customer_email: customerEmail || 'sem-email@placeholder.com', // Placeholder se não tiver email
@@ -176,11 +176,11 @@ export async function POST(
             utm_campaign: null,
             utm_term: null,
             utm_content: null,
-            status: customerEmail ? 'abandoned' : 'no_email', // Status especial se não tem email
+            status: 'abandoned', // Sempre abandoned (webhook atualiza depois)
             platform_data: checkout,
             abandoned_at: checkout.created_at || new Date().toISOString(),
           }, {
-            onConflict: 'id',
+            onConflict: 'platform_cart_id',
           });
 
         if (cartError) {

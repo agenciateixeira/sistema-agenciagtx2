@@ -162,7 +162,7 @@ async function processCheckoutEvent(
   const { error: cartError } = await supabase
     .from('abandoned_carts')
     .upsert({
-      id: `shopify_${checkout.id}`,
+      platform_cart_id: `shopify_${checkout.id}`, // ID externo único
       user_id: userId,
       integration_id: integrationId,
       customer_email: customerEmail,
@@ -182,7 +182,7 @@ async function processCheckoutEvent(
       platform_data: checkout,
       abandoned_at: checkout.created_at || new Date().toISOString(),
     }, {
-      onConflict: 'id',
+      onConflict: 'platform_cart_id',
     });
 
   if (cartError) {
@@ -291,7 +291,7 @@ async function processOrderEvent(
         recovered_at: new Date().toISOString(),
         recovered_value: parseFloat(order.total_price || '0'),
       })
-      .eq('id', `shopify_${order.checkout_id}`)
+      .eq('platform_cart_id', `shopify_${order.checkout_id}`)
       .eq('integration_id', integrationId);
 
     if (updateCartError) {
