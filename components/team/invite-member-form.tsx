@@ -99,11 +99,11 @@ export function InviteMemberForm() {
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="submit"
             disabled={status === 'loading'}
-            className="flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 sm:w-auto"
           >
             {status === 'loading' && <Loader2 className="h-4 w-4 animate-spin" />}
             Enviar convite
@@ -111,7 +111,7 @@ export function InviteMemberForm() {
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 sm:w-auto"
           >
             Cancelar
           </button>

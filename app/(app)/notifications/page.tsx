@@ -79,7 +79,7 @@ export default async function NotificationsPage() {
               <p className="font-medium text-gray-900">Notificações por e-mail</p>
               <p className="text-sm text-gray-600">Receba alertas importantes por e-mail</p>
             </div>
-            <button className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white">
+            <button className="w-full rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-medium text-white sm:w-auto">
               Ativado
             </button>
           </div>
@@ -89,7 +89,7 @@ export default async function NotificationsPage() {
               <p className="font-medium text-gray-900">Alertas de desempenho</p>
               <p className="text-sm text-gray-600">Notificações sobre quedas de conversão</p>
             </div>
-            <button className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white">
+            <button className="w-full rounded-lg bg-brand-600 px-4 py-2 text-center text-sm font-medium text-white sm:w-auto">
               Ativado
             </button>
           </div>
@@ -99,7 +99,7 @@ export default async function NotificationsPage() {
               <p className="font-medium text-gray-900">Relatórios semanais</p>
               <p className="text-sm text-gray-600">Resumo semanal de métricas e eventos</p>
             </div>
-            <button className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700">
+            <button className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-center text-sm font-medium text-gray-700 sm:w-auto">
               Desativado
             </button>
           </div>

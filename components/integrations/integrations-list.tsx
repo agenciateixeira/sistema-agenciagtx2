@@ -189,14 +189,14 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
       {integrations.map((integration) => (
         <div
           key={integration.id}
-          className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4"
+          className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center">
+          <div className="flex flex-1 items-start gap-4">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center">
               {platformLogos[integration.platform] || '🔗'}
             </div>
 
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-gray-900">
                   {integration.store_name}
@@ -238,13 +238,14 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-nowrap sm:justify-end">
             {integration.platform === 'shopify' && (
               <>
                 <button
                   onClick={() => handleSyncCarts(integration.id, integration.platform)}
                   disabled={syncingCarts === integration.id}
-                  className="rounded-lg p-2 text-green-600 hover:bg-green-50 disabled:opacity-50"
+                  type="button"
+                  className="flex w-full items-center justify-center rounded-lg p-2 text-green-600 hover:bg-green-50 disabled:opacity-50 sm:w-auto"
                   title="Importar carrinhos abandonados existentes"
                 >
                   <Download className={`h-4 w-4 ${syncingCarts === integration.id ? 'animate-bounce' : ''}`} />
@@ -252,7 +253,8 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
                 <button
                   onClick={() => handleConfigureWebhooks(integration.id, integration.platform)}
                   disabled={configuringWebhooks === integration.id}
-                  className="rounded-lg p-2 text-purple-600 hover:bg-purple-50 disabled:opacity-50"
+                  type="button"
+                  className="flex w-full items-center justify-center rounded-lg p-2 text-purple-600 hover:bg-purple-50 disabled:opacity-50 sm:w-auto"
                   title="Configurar Webhooks"
                 >
                   <Webhook className={`h-4 w-4 ${configuringWebhooks === integration.id ? 'animate-pulse' : ''}`} />
@@ -263,7 +265,8 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
             <button
               onClick={() => handleTest(integration.id)}
               disabled={testing === integration.id}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+              type="button"
+              className="flex w-full items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 sm:w-auto"
               title="Testar conexão"
             >
               <RefreshCw className={`h-4 w-4 ${testing === integration.id ? 'animate-spin' : ''}`} />
@@ -271,7 +274,8 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
 
             <button
               onClick={() => setEditingIntegration(integration)}
-              className="rounded-lg p-2 text-blue-600 hover:bg-blue-50"
+              type="button"
+              className="flex w-full items-center justify-center rounded-lg p-2 text-blue-600 hover:bg-blue-50 sm:w-auto"
               title="Editar integração"
             >
               <Edit className="h-4 w-4" />
@@ -280,7 +284,8 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
             <button
               onClick={() => handleDelete(integration.id, integration.store_name)}
               disabled={deleting === integration.id}
-              className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
+              type="button"
+              className="flex w-full items-center justify-center rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 sm:w-auto"
               title="Remover integração"
             >
               <Trash2 className="h-4 w-4" />

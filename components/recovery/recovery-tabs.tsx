@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BarChart3, Mail, Settings, ShoppingCart, TrendingUp } from 'lucide-react';
 
 interface Tab {
@@ -24,12 +24,23 @@ interface RecoveryTabsProps {
 
 export function RecoveryTabs({ children, defaultTab = 'overview' }: RecoveryTabsProps) {
   const [activeTab, setActiveTab] = useState(defaultTab);
+  const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  useEffect(() => {
+    const current = tabRefs.current[activeTab];
+    current?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [activeTab]);
 
   return (
     <div className="space-y-6">
       {/* Tabs Navigation */}
-      <div className="border-b border-gray-200 bg-white rounded-t-lg">
-        <nav className="flex space-x-8 px-6" aria-label="Tabs">
+      <div className="rounded-t-lg border-b border-gray-200 bg-white">
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-6">
+          <nav
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto py-2 no-scrollbar"
+            aria-label="Tabs"
+            role="tablist"
+          >
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -37,13 +48,21 @@ export function RecoveryTabs({ children, defaultTab = 'overview' }: RecoveryTabs
             return (
               <button
                 key={tab.id}
+                ref={(el) => {
+                  tabRefs.current[tab.id] = el;
+                }}
                 onClick={() => setActiveTab(tab.id)}
+                type="button"
+                role="tab"
+                id={`tab-${tab.id}`}
+                aria-controls={`tab-panel-${tab.id}`}
+                aria-selected={isActive}
                 className={`
-                  flex items-center gap-2 border-b-2 py-4 px-1 text-sm font-medium transition-colors
+                  flex flex-shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap
                   ${
                     isActive
-                      ? 'border-brand-600 text-brand-600'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
+                      ? 'border-brand-600 bg-brand-50 text-brand-700 shadow-sm'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700'
                   }
                 `}
               >
@@ -52,7 +71,8 @@ export function RecoveryTabs({ children, defaultTab = 'overview' }: RecoveryTabs
               </button>
             );
           })}
-        </nav>
+          </nav>
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -73,6 +93,10 @@ interface TabPanelProps {
   children: React.ReactNode;
 }
 
-export function TabPanel({ children }: TabPanelProps) {
-  return <div>{children}</div>;
+export function TabPanel({ id, children }: TabPanelProps) {
+  return (
+    <div role="tabpanel" id={`tab-panel-${id}`} aria-labelledby={`tab-${id}`}>
+      {children}
+    </div>
+  );
 }

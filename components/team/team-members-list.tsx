@@ -85,10 +85,10 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
         return (
           <div
             key={member.id}
-            className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md"
+            className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
           >
-            <div className="flex items-center gap-4 flex-1">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 text-brand-700">
+            <div className="flex w-full flex-1 flex-col gap-4 sm:flex-row sm:items-center sm:gap-4">
+              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700">
                 {member.avatar_url ? (
                   <Image
                     src={member.avatar_url}
@@ -101,7 +101,7 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                   <UserIcon className="h-5 w-5" />
                 )}
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-semibold text-gray-900">
                     {member.nome || 'Usuário'}
@@ -121,13 +121,13 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
               {editing === member.id ? (
-                <div className="flex items-center gap-2">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
-                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500 sm:w-auto"
                   >
                     <option value="VIEWER">Visualizador</option>
                     <option value="EDITOR">Editor</option>
@@ -135,19 +135,21 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                   </select>
                   <button
                     onClick={() => handleUpdateRole(member.id)}
-                    className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-700"
+                    className="w-full rounded-lg bg-brand-600 px-3 py-1.5 text-center text-sm font-medium text-white hover:bg-brand-700 sm:w-auto"
+                    type="button"
                   >
                     Salvar
                   </button>
                   <button
                     onClick={() => setEditing(null)}
-                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-1.5 text-center text-sm font-medium text-gray-700 hover:bg-gray-50 sm:w-auto"
+                    type="button"
                   >
                     Cancelar
                   </button>
                 </div>
               ) : (
-                <>
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
                   <div className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${roleColors[role]}`}>
                     <RoleIcon className="h-3.5 w-3.5" />
                     {roleLabels[role]}
@@ -156,8 +158,12 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                   {!isCurrentUser && (
                     <>
                       <button
-                        onClick={() => setEditing(member.id)}
-                        className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+                        onClick={() => {
+                          setSelectedRole(role);
+                          setEditing(member.id);
+                        }}
+                        className="flex w-full items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 sm:w-auto"
+                        type="button"
                         title="Editar permissões"
                       >
                         <Edit2 className="h-4 w-4" />
@@ -165,14 +171,15 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                       <button
                         onClick={() => handleDelete(member.id)}
                         disabled={deleting === member.id}
-                        className="rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                        className="flex w-full items-center justify-center rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 sm:w-auto"
+                        type="button"
                         title="Remover membro"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </>
                   )}
-                </>
+                </div>
               )}
             </div>
           </div>
