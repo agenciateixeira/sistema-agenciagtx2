@@ -6,6 +6,7 @@ import { appNavigation } from '@/lib/navigation';
 import { Bell, Search, User, LogOut, Menu, X } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -15,6 +16,7 @@ interface TopbarProps {
 interface UserProfile {
   nome: string;
   role: 'ADMIN' | 'EDITOR' | 'VIEWER';
+  email?: string;
   avatar_url?: string | null;
 }
 
@@ -119,16 +121,56 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-full sm:w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
-                <form action={handleLogout}>
-                  <button
-                    type="submit"
-                    className="flex w-full items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+              <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-gray-200 bg-white shadow-2xl ring-1 ring-black/5 z-50">
+                <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+                  <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-brand-700">
+                    {userProfile?.avatar_url ? (
+                      <Image
+                        src={`${userProfile.avatar_url}?t=${Date.now()}`}
+                        alt={userProfile.nome}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">
+                      {userProfile?.nome || 'Carregando...'}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {userProfile?.email || '...'}
+                    </p>
+                    <span className="mt-1 inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700">
+                      {userProfile ? roleLabels[userProfile.role] : '...'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="px-4 py-2">
+                  <Link
+                    href="/profile"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    onClick={() => setShowUserMenu(false)}
                   >
-                    <LogOut className="h-4 w-4" />
-                    Sair
-                  </button>
-                </form>
+                    Meu perfil
+                    <span className="text-xs text-gray-400">↗</span>
+                  </Link>
+                </div>
+
+                <div className="border-t border-gray-100 px-4 py-2">
+                  <form action={handleLogout}>
+                    <button
+                      type="submit"
+                      className="flex w-full items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 ring-1 ring-transparent hover:bg-red-100"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sair
+                    </button>
+                  </form>
+                </div>
               </div>
             )}
           </div>
