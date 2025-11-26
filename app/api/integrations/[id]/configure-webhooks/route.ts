@@ -47,7 +47,7 @@ export async function POST(
     const shopDomain = storeUrl.split('/')[0];
 
     // URL do webhook
-    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://sistema-agenciagtx2.vercel.app'}/api/webhook/shopify`;
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/shopify`;
 
     console.log('📍 Webhook URL:', webhookUrl);
     console.log('🏪 Shop Domain:', shopDomain);

@@ -32,7 +32,7 @@ export async function registerShopifyWebhooks(integration: Integration): Promise
   error?: string;
 }> {
   try {
-    const webhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/shopify`;
+    const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/shopify`;
     const webhooksCreated = [];
 
     for (const topic of WEBHOOK_TOPICS) {
@@ -145,7 +145,7 @@ export async function cleanupOldWebhooks(integration: Integration): Promise<{
     }
 
     let removed = 0;
-    const ourWebhookUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhook/shopify`;
+    const ourWebhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/shopify`;
 
     // Remove webhooks que apontam para nosso sistema mas estão duplicados
     for (const webhook of webhooks) {
