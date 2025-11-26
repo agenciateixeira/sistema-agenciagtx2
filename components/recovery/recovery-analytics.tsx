@@ -14,6 +14,7 @@ import {
   FileText
 } from 'lucide-react';
 import { exportRecoveryToExcel, exportRecoveryToPDF } from '@/lib/export-utils';
+import { RecoveryCrossAnalysis } from './recovery-cross-analysis';
 
 interface AnalyticsData {
   cohorts: any[];
@@ -22,6 +23,12 @@ interface AnalyticsData {
   timeOfDay: any;
   cartValue: any[];
   roi: any;
+  crossData?: {
+    cohortByUTM: any[];
+    cohortByValue: any[];
+    timeByValue: any[];
+    utmByValue: any[];
+  };
 }
 
 export function RecoveryAnalytics() {
@@ -152,6 +159,9 @@ export function RecoveryAnalytics() {
         />
       </div>
 
+      {/* Insights Automáticos */}
+      <InsightsCard analytics={analytics} />
+
       {/* Funil de Conversão */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="flex items-center gap-2 mb-6">
@@ -208,6 +218,13 @@ export function RecoveryAnalytics() {
           <WeekdayChart data={analytics.timeOfDay.byDayOfWeek} />
         </div>
       </div>
+
+      {/* Cruzamento de Dados Avançado */}
+      {analytics.crossData && (
+        <div className="mt-8">
+          <RecoveryCrossAnalysis crossData={analytics.crossData} />
+        </div>
+      )}
     </div>
   );
 }
@@ -395,6 +412,112 @@ function WeekdayChart({ data }: any) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function InsightsCard({ analytics }: any) {
+  // Calcular insights
+  const bestHour = analytics.timeOfDay.byHour.reduce((best: any, current: any) => {
+    return parseFloat(current.recoveryRate) > parseFloat(best.recoveryRate) ? current : best;
+  }, analytics.timeOfDay.byHour[0]);
+
+  const bestDay = analytics.timeOfDay.byDayOfWeek.reduce((best: any, current: any) => {
+    return parseFloat(current.recoveryRate) > parseFloat(best.recoveryRate) ? current : best;
+  }, analytics.timeOfDay.byDayOfWeek[0]);
+
+  const bestUTM = analytics.utm.sources.length > 0
+    ? analytics.utm.sources.reduce((best: any, current: any) => {
+        return parseFloat(current.recoveryRate) > parseFloat(best.recoveryRate) ? current : best;
+      }, analytics.utm.sources[0])
+    : null;
+
+  const bestValueRange = analytics.cartValue.reduce((best: any, current: any) => {
+    return parseFloat(current.recoveryRate) > parseFloat(best.recoveryRate) ? current : best;
+  }, analytics.cartValue[0]);
+
+  const avgRecoveryTime = analytics.funnel.clickToConversion;
+
+  return (
+    <div className="rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Zap className="h-6 w-6 text-blue-600" />
+        <h3 className="text-lg font-bold text-gray-900">Insights Automáticos</h3>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Melhor Horário */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="h-4 w-4 text-orange-600" />
+            <span className="text-xs font-semibold text-gray-600 uppercase">Melhor Horário</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{bestHour.hour}:00</p>
+          <p className="text-sm text-gray-600">Taxa de recuperação: {bestHour.recoveryRate}%</p>
+          <p className="text-xs text-gray-500 mt-1">{bestHour.carts} carrinhos nesse horário</p>
+        </div>
+
+        {/* Melhor Dia */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="h-4 w-4 text-pink-600" />
+            <span className="text-xs font-semibold text-gray-600 uppercase">Melhor Dia</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{bestDay.day}</p>
+          <p className="text-sm text-gray-600">Taxa de recuperação: {bestDay.recoveryRate}%</p>
+          <p className="text-xs text-gray-500 mt-1">{bestDay.carts} carrinhos nesse dia</p>
+        </div>
+
+        {/* Melhor Faixa de Valor */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <DollarSign className="h-4 w-4 text-green-600" />
+            <span className="text-xs font-semibold text-gray-600 uppercase">Melhor Faixa</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{bestValueRange.range}</p>
+          <p className="text-sm text-gray-600">Taxa de recuperação: {bestValueRange.recoveryRate}%</p>
+          <p className="text-xs text-gray-500 mt-1">{bestValueRange.carts} carrinhos</p>
+        </div>
+
+        {/* Melhor UTM Source */}
+        {bestUTM && (
+          <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-2">
+              <Tag className="h-4 w-4 text-indigo-600" />
+              <span className="text-xs font-semibold text-gray-600 uppercase">Melhor Source</span>
+            </div>
+            <p className="text-lg font-bold text-gray-900 truncate">{bestUTM.name}</p>
+            <p className="text-sm text-gray-600">Taxa de recuperação: {bestUTM.recoveryRate}%</p>
+            <p className="text-xs text-gray-500 mt-1">{bestUTM.carts} carrinhos</p>
+          </div>
+        )}
+
+        {/* Taxa de Click para Conversão */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-purple-600" />
+            <span className="text-xs font-semibold text-gray-600 uppercase">Click → Conversão</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{avgRecoveryTime}%</p>
+          <p className="text-sm text-gray-600">De quem clica, converte</p>
+          <p className="text-xs text-gray-500 mt-1">{analytics.funnel.clicked} cliques totais</p>
+        </div>
+
+        {/* Potencial de Recuperação */}
+        <div className="bg-white rounded-lg p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-2">
+            <BarChart3 className="h-4 w-4 text-amber-600" />
+            <span className="text-xs font-semibold text-gray-600 uppercase">Potencial</span>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">
+            R$ {(analytics.roi.totalAbandonedValue - analytics.roi.totalRecoveredValue).toFixed(2)}
+          </p>
+          <p className="text-sm text-gray-600">Ainda pode ser recuperado</p>
+          <p className="text-xs text-gray-500 mt-1">
+            {((analytics.roi.totalRecoveredValue / analytics.roi.totalAbandonedValue) * 100).toFixed(1)}% já recuperado
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

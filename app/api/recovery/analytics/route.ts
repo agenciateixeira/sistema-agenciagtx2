@@ -59,6 +59,9 @@ export async function GET(request: NextRequest) {
     // 6. MÉTRICAS DE ROI
     const roiMetrics = await calculateROI(supabase, user.id, startDate);
 
+    // 7. CRUZAMENTOS MULTIDIMENSIONAIS
+    const crossAnalysis = await analyzeCrossData(supabase, user.id, startDate);
+
     return NextResponse.json({
       success: true,
       period: parseInt(period),
@@ -69,6 +72,7 @@ export async function GET(request: NextRequest) {
       timeOfDay: timeAnalysis,
       cartValue: valueAnalysis,
       roi: roiMetrics,
+      crossData: crossAnalysis,
     });
   } catch (error: any) {
     console.error('Erro em analytics:', error);
@@ -347,4 +351,216 @@ function groupByField(carts: any[], field: string) {
     }))
     .sort((a: any, b: any) => b.carts - a.carts)
     .slice(0, 10); // Top 10
+}
+
+/**
+ * Análises de Cruzamento Multidimensional
+ */
+async function analyzeCrossData(supabase: any, userId: string, startDate: Date) {
+  const { data: carts } = await supabase
+    .from('abandoned_carts')
+    .select('*')
+    .eq('user_id', userId)
+    .gte('abandoned_at', startDate.toISOString());
+
+  if (!carts || carts.length === 0) {
+    return {
+      cohortByUTM: [],
+      cohortByValue: [],
+      timeByValue: [],
+      utmByValue: [],
+    };
+  }
+
+  // 1. Coorte x UTM Source (Top 5 sources por semana)
+  const cohortByUTM = analyzeCohortByUTM(carts);
+
+  // 2. Coorte x Valor (Performance por faixa de valor ao longo do tempo)
+  const cohortByValue = analyzeCohortByValue(carts);
+
+  // 3. Horário x Valor (Quais horários têm carrinhos de maior valor)
+  const timeByValue = analyzeTimeByValue(carts);
+
+  // 4. UTM x Valor (Qual source traz carrinhos de maior valor)
+  const utmByValue = analyzeUTMByValue(carts);
+
+  return {
+    cohortByUTM,
+    cohortByValue,
+    timeByValue,
+    utmByValue,
+  };
+}
+
+/**
+ * Coorte x UTM Source
+ */
+function analyzeCohortByUTM(carts: any[]) {
+  const cohortUTM = new Map<string, any>();
+
+  carts.forEach((cart: any) => {
+    const date = new Date(cart.abandoned_at);
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - date.getDay());
+    const weekKey = weekStart.toISOString().split('T')[0];
+    const source = cart.utm_source || '(direct)';
+
+    const key = `${weekKey}_${source}`;
+
+    if (!cohortUTM.has(key)) {
+      cohortUTM.set(key, {
+        week: weekKey,
+        source,
+        carts: 0,
+        recovered: 0,
+        totalValue: 0,
+      });
+    }
+
+    const item = cohortUTM.get(key)!;
+    item.carts++;
+    item.totalValue += cart.total_value;
+    if (cart.status === 'recovered') item.recovered++;
+  });
+
+  return Array.from(cohortUTM.values())
+    .map((item: any) => ({
+      ...item,
+      week: new Date(item.week).toLocaleDateString('pt-BR'),
+      recoveryRate: item.carts > 0 ? ((item.recovered / item.carts) * 100).toFixed(1) : '0.0',
+      avgValue: item.carts > 0 ? (item.totalValue / item.carts).toFixed(2) : '0.00',
+    }))
+    .sort((a: any, b: any) => b.carts - a.carts);
+}
+
+/**
+ * Coorte x Valor do Carrinho
+ */
+function analyzeCohortByValue(carts: any[]) {
+  const cohortValue = new Map<string, any>();
+
+  const ranges = [
+    { min: 0, max: 100, label: 'R$ 0-100' },
+    { min: 100, max: 300, label: 'R$ 100-300' },
+    { min: 300, max: 500, label: 'R$ 300-500' },
+    { min: 500, max: Infinity, label: 'R$ 500+' },
+  ];
+
+  carts.forEach((cart: any) => {
+    const date = new Date(cart.abandoned_at);
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - date.getDay());
+    const weekKey = weekStart.toISOString().split('T')[0];
+
+    const range = ranges.find((r: any) => cart.total_value >= r.min && cart.total_value < r.max);
+    if (!range) return;
+
+    const key = `${weekKey}_${range.label}`;
+
+    if (!cohortValue.has(key)) {
+      cohortValue.set(key, {
+        week: weekKey,
+        range: range.label,
+        carts: 0,
+        recovered: 0,
+        totalValue: 0,
+      });
+    }
+
+    const item = cohortValue.get(key)!;
+    item.carts++;
+    item.totalValue += cart.total_value;
+    if (cart.status === 'recovered') item.recovered++;
+  });
+
+  return Array.from(cohortValue.values())
+    .map((item: any) => ({
+      ...item,
+      week: new Date(item.week).toLocaleDateString('pt-BR'),
+      recoveryRate: item.carts > 0 ? ((item.recovered / item.carts) * 100).toFixed(1) : '0.0',
+    }))
+    .sort((a: any, b: any) => new Date(b.week).getTime() - new Date(a.week).getTime());
+}
+
+/**
+ * Horário x Valor
+ */
+function analyzeTimeByValue(carts: any[]) {
+  const timeValue = Array.from({ length: 24 }, (_, i) => ({
+    hour: i,
+    lowValue: { carts: 0, avgValue: 0, totalValue: 0 },
+    midValue: { carts: 0, avgValue: 0, totalValue: 0 },
+    highValue: { carts: 0, avgValue: 0, totalValue: 0 },
+  }));
+
+  carts.forEach((cart: any) => {
+    const hour = new Date(cart.abandoned_at).getHours();
+    const value = cart.total_value;
+
+    let segment: 'lowValue' | 'midValue' | 'highValue';
+    if (value < 100) segment = 'lowValue';
+    else if (value < 500) segment = 'midValue';
+    else segment = 'highValue';
+
+    timeValue[hour][segment].carts++;
+    timeValue[hour][segment].totalValue += value;
+  });
+
+  return timeValue
+    .filter((h: any) => h.lowValue.carts > 0 || h.midValue.carts > 0 || h.highValue.carts > 0)
+    .map((h: any) => ({
+      hour: `${h.hour}:00`,
+      lowValue: h.lowValue.carts,
+      midValue: h.midValue.carts,
+      highValue: h.highValue.carts,
+      lowAvg: h.lowValue.carts > 0 ? (h.lowValue.totalValue / h.lowValue.carts).toFixed(2) : '0.00',
+      midAvg: h.midValue.carts > 0 ? (h.midValue.totalValue / h.midValue.carts).toFixed(2) : '0.00',
+      highAvg: h.highValue.carts > 0 ? (h.highValue.totalValue / h.highValue.carts).toFixed(2) : '0.00',
+    }));
+}
+
+/**
+ * UTM x Valor
+ */
+function analyzeUTMByValue(carts: any[]) {
+  const utmValue = new Map<string, any>();
+
+  carts.forEach((cart: any) => {
+    const source = cart.utm_source || '(direct)';
+
+    if (!utmValue.has(source)) {
+      utmValue.set(source, {
+        source,
+        lowValue: { carts: 0, totalValue: 0, recovered: 0 },
+        midValue: { carts: 0, totalValue: 0, recovered: 0 },
+        highValue: { carts: 0, totalValue: 0, recovered: 0 },
+      });
+    }
+
+    const item = utmValue.get(source)!;
+    const value = cart.total_value;
+
+    let segment: 'lowValue' | 'midValue' | 'highValue';
+    if (value < 100) segment = 'lowValue';
+    else if (value < 500) segment = 'midValue';
+    else segment = 'highValue';
+
+    item[segment].carts++;
+    item[segment].totalValue += value;
+    if (cart.status === 'recovered') item[segment].recovered++;
+  });
+
+  return Array.from(utmValue.values())
+    .map((item: any) => ({
+      source: item.source,
+      lowValue: item.lowValue.carts,
+      midValue: item.midValue.carts,
+      highValue: item.highValue.carts,
+      lowRecovery: item.lowValue.carts > 0 ? ((item.lowValue.recovered / item.lowValue.carts) * 100).toFixed(1) : '0.0',
+      midRecovery: item.midValue.carts > 0 ? ((item.midValue.recovered / item.midValue.carts) * 100).toFixed(1) : '0.0',
+      highRecovery: item.highValue.carts > 0 ? ((item.highValue.recovered / item.highValue.carts) * 100).toFixed(1) : '0.0',
+      totalCarts: item.lowValue.carts + item.midValue.carts + item.highValue.carts,
+    }))
+    .sort((a: any, b: any) => b.totalCarts - a.totalCarts)
+    .slice(0, 10);
 }
