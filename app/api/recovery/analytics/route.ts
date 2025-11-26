@@ -120,7 +120,7 @@ async function analyzeCohorts(supabase: any, userId: string, startDate: Date) {
     }
   });
 
-  return Array.from(cohorts.values()).map(cohort => ({
+  return Array.from(cohorts.values()).map((cohort: any) => ({
     ...cohort,
     recoveryRate: cohort.totalCarts > 0
       ? ((cohort.recoveredCarts / cohort.totalCarts) * 100).toFixed(1)
@@ -226,11 +226,11 @@ async function analyzeByTime(supabase: any, userId: string, startDate: Date) {
   });
 
   return {
-    byHour: byHour.map(h => ({
+    byHour: byHour.map((h: any) => ({
       ...h,
       recoveryRate: h.carts > 0 ? ((h.recovered / h.carts) * 100).toFixed(1) : '0.0',
     })),
-    byDayOfWeek: byDayOfWeek.map(d => ({
+    byDayOfWeek: byDayOfWeek.map((d: any) => ({
       ...d,
       recoveryRate: d.carts > 0 ? ((d.recovered / d.carts) * 100).toFixed(1) : '0.0',
     })),
@@ -260,11 +260,11 @@ async function analyzeByValue(supabase: any, userId: string, startDate: Date) {
     { min: 1000, max: Infinity, label: 'R$ 1000+' },
   ];
 
-  return ranges.map(range => {
+  return ranges.map((range: any) => {
     const cartsInRange = carts.filter(
-      c => c.total_value >= range.min && c.total_value < range.max
+      (c: any) => c.total_value >= range.min && c.total_value < range.max
     );
-    const recovered = cartsInRange.filter(c => c.status === 'recovered').length;
+    const recovered = cartsInRange.filter((c: any) => c.status === 'recovered').length;
 
     return {
       range: range.label,
@@ -317,7 +317,7 @@ async function calculateROI(supabase: any, userId: string, startDate: Date) {
 function groupByField(carts: any[], field: string) {
   const groups = new Map<string, any>();
 
-  carts.forEach(cart => {
+  carts.forEach((cart: any) => {
     const key = cart[field] || '(direct)';
 
     if (!groups.has(key)) {
@@ -341,10 +341,10 @@ function groupByField(carts: any[], field: string) {
   });
 
   return Array.from(groups.values())
-    .map(g => ({
+    .map((g: any) => ({
       ...g,
       recoveryRate: g.carts > 0 ? ((g.recovered / g.carts) * 100).toFixed(1) : '0.0',
     }))
-    .sort((a, b) => b.carts - a.carts)
+    .sort((a: any, b: any) => b.carts - a.carts)
     .slice(0, 10); // Top 10
 }
