@@ -143,9 +143,9 @@ async function analyzeFunnel(supabase: any, userId: string, startDate: Date) {
     .gte('created_at', startDate.toISOString());
 
   const totalSent = emails?.length || 0;
-  const opened = emails?.filter(e => e.opened).length || 0;
-  const clicked = emails?.filter(e => e.clicked).length || 0;
-  const converted = emails?.filter(e => e.converted).length || 0;
+  const opened = emails?.filter((e: any) => e.opened).length || 0;
+  const clicked = emails?.filter((e: any) => e.clicked).length || 0;
+  const converted = emails?.filter((e: any) => e.converted).length || 0;
 
   return {
     sent: totalSent,
@@ -293,8 +293,8 @@ async function calculateROI(supabase: any, userId: string, startDate: Date) {
     .eq('action_type', 'email_sent')
     .gte('created_at', startDate.toISOString());
 
-  const totalAbandoned = carts?.reduce((sum, c) => sum + c.total_value, 0) || 0;
-  const totalRecovered = carts?.reduce((sum, c) => sum + (c.recovered_value || 0), 0) || 0;
+  const totalAbandoned = carts?.reduce((sum: number, c: any) => sum + c.total_value, 0) || 0;
+  const totalRecovered = carts?.reduce((sum: number, c: any) => sum + (c.recovered_value || 0), 0) || 0;
   const emailsSent = emails?.length || 0;
 
   // Custo estimado por email (R$ 0.10 como exemplo)
