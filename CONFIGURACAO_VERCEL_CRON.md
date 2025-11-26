@@ -1,13 +1,28 @@
-# Configuração do Vercel Cron Jobs
+# Configuração da Automação de Emails (GitHub Actions)
 
 ## ✅ O que foi implementado:
 
 1. **Envio Manual de Emails** - Botão "Recuperar" na aba Carrinhos
-2. **Envio Automático de Emails** - Job que roda a cada hora via Vercel Cron
+2. **Envio Automático de Emails** - Job que roda a cada hora via GitHub Actions (grátis)
 
 ## 🚀 Próximos passos para ativar:
 
-### 1. Adicionar variável de ambiente no Vercel
+### 1. Verificar GitHub Secrets (já devem estar configurados)
+
+O workflow usa 2 secrets do GitHub:
+- `APP_URL` - URL da aplicação no Vercel
+- `CRON_SECRET` - Token secreto para autenticação
+
+**Verificar se já existem:**
+https://github.com/agenciateixeira/sistema-agenciagtx2/settings/secrets/actions
+
+Se não existirem, adicione:
+```
+APP_URL = https://sistema-agenciagtx2.vercel.app
+CRON_SECRET = [mesmo token do Vercel]
+```
+
+### 2. Adicionar variável de ambiente no Vercel
 
 Acesse: https://vercel.com/agenciateixeira/sistema-agenciagtx2/settings/environment-variables
 
@@ -27,15 +42,16 @@ Ou use qualquer string longa e aleatória, exemplo:
 CRON_SECRET=minha-chave-super-secreta-12345-nao-compartilhar
 ```
 
-### 2. Verificar Cron Jobs no Vercel
+### 2. Verificar GitHub Actions
 
-Após o próximo deploy, o Vercel vai automaticamente detectar o arquivo `vercel.json` e criar os cron jobs.
+Os cron jobs rodam via **GitHub Actions** (100% grátis).
 
-**Verificar:**
-1. Acesse: https://vercel.com/agenciateixeira/sistema-agenciagtx2/settings/crons
-2. Você deve ver:
-   - `send-recovery-emails` - Executa a cada hora (0 * * * *)
-   - `check-alerts` - Executa a cada 15 min (*/15 * * * *)
+**Verificar workflows ativos:**
+1. Acesse: https://github.com/agenciateixeira/sistema-agenciagtx2/actions
+2. Você deve ver 3 workflows:
+   - `Recovery Emails Automation` - Executa a cada hora (0 * * * *)
+   - `Abandoned Cart Detection` - Executa a cada 5 min (*/5 * * * *)
+   - `Meta CAPI Event Processing` - Executa a cada 5 min (*/5 * * * *)
 
 ### 3. Configurar email de recuperação no sistema
 
@@ -53,16 +69,18 @@ Acesse `/recovery` → aba "Configurações" e configure:
 
 ### 4. Testar manualmente
 
-Antes de esperar 1 hora, teste manualmente:
+Você pode testar de 2 formas:
 
+**Opção 1: Executar workflow manualmente no GitHub**
+1. Acesse: https://github.com/agenciateixeira/sistema-agenciagtx2/actions
+2. Clique em "Recovery Emails Automation"
+3. Clique em "Run workflow" → "Run workflow"
+4. Aguarde e veja os logs
+
+**Opção 2: Chamar API diretamente**
 ```bash
 curl -X GET https://sistema-agenciagtx2.vercel.app/api/jobs/send-recovery-emails \
   -H "Authorization: Bearer SEU-CRON-SECRET-AQUI"
-```
-
-Ou acesse direto no navegador (com autenticação):
-```
-https://sistema-agenciagtx2.vercel.app/api/jobs/send-recovery-emails
 ```
 
 ## 📊 Como funciona:
