@@ -5,6 +5,7 @@ import { RecoveryTabs, TabPanel } from '@/components/recovery/recovery-tabs';
 import { RecoveryOverview } from '@/components/recovery/recovery-overview';
 import { RecoveryHistory } from '@/components/recovery/recovery-history';
 import { RecoveryCarts } from '@/components/recovery/recovery-carts';
+import { RecoveryAnalytics } from '@/components/recovery/recovery-analytics';
 
 async function getSupabaseServer() {
   const cookieStore = cookies();
@@ -88,6 +89,10 @@ export default async function RecoveryPage() {
       <RecoveryTabs defaultTab="overview">
         <TabPanel id="overview">
           <RecoveryOverview stats={stats || []} cartMetrics={cartMetrics} />
+        </TabPanel>
+
+        <TabPanel id="analytics">
+          <RecoveryAnalytics />
         </TabPanel>
 
         <TabPanel id="carts">

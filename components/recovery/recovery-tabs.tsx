@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BarChart3, Mail, Settings, ShoppingCart } from 'lucide-react';
+import { BarChart3, Mail, Settings, ShoppingCart, TrendingUp } from 'lucide-react';
 
 interface Tab {
   id: string;
@@ -11,6 +11,7 @@ interface Tab {
 
 const tabs: Tab[] = [
   { id: 'overview', label: 'Visão Geral', icon: BarChart3 },
+  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
   { id: 'carts', label: 'Carrinhos', icon: ShoppingCart },
   { id: 'history', label: 'Histórico', icon: Mail },
   { id: 'settings', label: 'Configurações', icon: Settings },
