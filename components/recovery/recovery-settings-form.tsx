@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { SectionTitle } from '@/components/dashboard/section-title';
-import { Save, Upload, Mail, MessageSquare, Globe, Power } from 'lucide-react';
+import { Save, Upload, Mail, MessageSquare, Globe, Power, Clock, Repeat, Hash } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 interface RecoverySettingsFormProps {
@@ -20,11 +20,17 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
     logo_url: '',
     custom_message: '',
     enabled: true,
+    delay_hours: 1,
+    interval_hours: 24,
+    max_emails: 3,
   };
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [enabled, setEnabled] = useState(emailSettings.enabled ?? true);
+  const [delayHours, setDelayHours] = useState(emailSettings.delay_hours || 1);
+  const [intervalHours, setIntervalHours] = useState(emailSettings.interval_hours || 24);
+  const [maxEmails, setMaxEmails] = useState(emailSettings.max_emails || 3);
   const [senderEmail, setSenderEmail] = useState(emailSettings.sender_email || '');
   const [senderName, setSenderName] = useState(emailSettings.sender_name || '');
   const [replyTo, setReplyTo] = useState(emailSettings.reply_to || '');
@@ -49,6 +55,9 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
         logo_url: logoUrl.trim() || null,
         custom_message: customMessage.trim() || null,
         enabled,
+        delay_hours: delayHours,
+        interval_hours: intervalHours,
+        max_emails: maxEmails,
       };
 
       const { error } = await supabase
@@ -170,6 +179,111 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
               }`}
             />
           </button>
+        </div>
+      </div>
+
+      {/* Configurações de Automação */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <SectionTitle
+          title="Configurações de Automação"
+          description="Defina quando e quantos emails de recuperação serão enviados"
+        />
+
+        <div className="mt-6 grid gap-5 sm:grid-cols-3">
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Clock className="h-4 w-4" />
+              Delay Inicial
+            </label>
+            <select
+              value={delayHours}
+              onChange={(e) => setDelayHours(parseInt(e.target.value))}
+              className="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              <option value={1}>1 hora</option>
+              <option value={2}>2 horas</option>
+              <option value={6}>6 horas</option>
+              <option value={12}>12 horas</option>
+              <option value={24}>24 horas</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Tempo após abandono antes do 1º email
+            </p>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Repeat className="h-4 w-4" />
+              Intervalo Entre Emails
+            </label>
+            <select
+              value={intervalHours}
+              onChange={(e) => setIntervalHours(parseInt(e.target.value))}
+              className="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              <option value={12}>12 horas</option>
+              <option value={24}>24 horas</option>
+              <option value={48}>48 horas</option>
+              <option value={72}>72 horas</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Tempo entre emails subsequentes
+            </p>
+          </div>
+
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Hash className="h-4 w-4" />
+              Máximo de Emails
+            </label>
+            <select
+              value={maxEmails}
+              onChange={(e) => setMaxEmails(parseInt(e.target.value))}
+              className="mt-1.5 w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
+              <option value={1}>1 email</option>
+              <option value={2}>2 emails</option>
+              <option value={3}>3 emails</option>
+              <option value={4}>4 emails</option>
+              <option value={5}>5 emails</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Máximo por carrinho abandonado
+            </p>
+          </div>
+        </div>
+
+        {/* Preview da Timeline */}
+        <div className="mt-6 rounded-lg bg-gradient-to-r from-blue-50 to-purple-50 p-5">
+          <p className="text-sm font-semibold text-gray-900 mb-3">📅 Timeline de Envio</p>
+          <div className="space-y-2 text-xs text-gray-700">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-blue-500"></div>
+              <span><strong>00h:</strong> Cliente abandona carrinho</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+              <span><strong>{delayHours}h:</strong> 1º email enviado</span>
+            </div>
+            {maxEmails >= 2 && (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                <span><strong>{delayHours + intervalHours}h:</strong> 2º email enviado</span>
+              </div>
+            )}
+            {maxEmails >= 3 && (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                <span><strong>{delayHours + (intervalHours * 2)}h:</strong> 3º email enviado</span>
+              </div>
+            )}
+            {maxEmails >= 4 && (
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-purple-500"></div>
+                <span><strong>{delayHours + (intervalHours * 3)}h:</strong> 4º email enviado</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
