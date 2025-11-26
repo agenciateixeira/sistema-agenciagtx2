@@ -9,8 +9,11 @@ import {
   Clock,
   Calendar,
   Tag,
-  Zap
+  Zap,
+  FileSpreadsheet,
+  FileText
 } from 'lucide-react';
+import { exportRecoveryToExcel, exportRecoveryToPDF } from '@/lib/export-utils';
 
 interface AnalyticsData {
   cohorts: any[];
@@ -60,20 +63,63 @@ export function RecoveryAnalytics() {
     return <div className="text-center text-gray-600 py-12">Erro ao carregar analytics</div>;
   }
 
+  const handleExportExcel = async () => {
+    if (!analytics) return;
+    try {
+      await exportRecoveryToExcel(analytics, period);
+    } catch (error) {
+      console.error('Erro ao exportar Excel:', error);
+      alert('Erro ao exportar para Excel. Tente novamente.');
+    }
+  };
+
+  const handleExportPDF = async () => {
+    if (!analytics) return;
+    try {
+      await exportRecoveryToPDF(analytics, period);
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      alert('Erro ao exportar para PDF. Tente novamente.');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Filtro de Período */}
-      <div className="flex items-center justify-between">
+      {/* Filtro de Período e Botões de Export */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h2 className="text-2xl font-bold text-gray-900">Analytics Avançado</h2>
-        <select
-          value={period}
-          onChange={(e) => setPeriod(e.target.value)}
-          className="rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-        >
-          <option value="7">Últimos 7 dias</option>
-          <option value="30">Últimos 30 dias</option>
-          <option value="90">Últimos 90 dias</option>
-        </select>
+
+        <div className="flex items-center gap-3">
+          {/* Botões de Export */}
+          <button
+            onClick={handleExportExcel}
+            disabled={!analytics}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Exportar Excel
+          </button>
+
+          <button
+            onClick={handleExportPDF}
+            disabled={!analytics}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            Exportar PDF
+          </button>
+
+          {/* Seletor de Período */}
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value)}
+            className="rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+          >
+            <option value="7">Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+          </select>
+        </div>
       </div>
 
       {/* ROI Cards */}
