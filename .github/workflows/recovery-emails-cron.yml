@@ -1,0 +1,31 @@
+name: Recovery Emails Automation
+
+on:
+  schedule:
+    # Roda a cada hora no minuto 0
+    - cron: '0 * * * *'
+  # Permite execução manual para testes
+  workflow_dispatch:
+
+jobs:
+  send-recovery-emails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send recovery emails
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X GET "${{ secrets.APP_URL }}/api/jobs/send-recovery-emails" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "📊 Response Status: $http_code"
+          echo "📄 Response Body: $body"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Error: HTTP $http_code"
+            exit 1
+          fi
+
+          echo "✅ Recovery emails sent successfully"
