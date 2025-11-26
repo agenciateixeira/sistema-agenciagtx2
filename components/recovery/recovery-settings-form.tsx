@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { SectionTitle } from '@/components/dashboard/section-title';
-import { Save, Upload, Mail, MessageSquare, Globe, Power, Clock, Repeat, Hash } from 'lucide-react';
+import { Save, Upload, Mail, MessageSquare, Globe, Power, Clock, Repeat, Hash, FileText, Sparkles } from 'lucide-react';
 import type { User } from '@supabase/supabase-js';
 
 interface RecoverySettingsFormProps {
@@ -23,6 +23,20 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
     delay_hours: 1,
     interval_hours: 24,
     max_emails: 3,
+    templates: {
+      email_1: {
+        subject: '{{customerName}}, você esqueceu algo no carrinho - {{storeName}}',
+        message: 'Notamos que você deixou alguns produtos incríveis no seu carrinho. Não perca essa oportunidade!',
+      },
+      email_2: {
+        subject: '{{customerName}}, seus produtos ainda estão esperando!',
+        message: 'Ainda está pensando? Seus produtos favoritos estão reservados, mas não por muito tempo!',
+      },
+      email_3: {
+        subject: 'Última chance! {{customerName}}, finalize sua compra',
+        message: 'Esta é sua última oportunidade de finalizar sua compra antes que os produtos voltem para o estoque.',
+      },
+    },
   };
 
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -38,6 +52,20 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
   const [customMessage, setCustomMessage] = useState(
     emailSettings.custom_message || 'Notamos que você deixou alguns produtos incríveis no seu carrinho. Não perca essa oportunidade!'
   );
+  const [templates, setTemplates] = useState(emailSettings.templates || {
+    email_1: {
+      subject: '{{customerName}}, você esqueceu algo no carrinho - {{storeName}}',
+      message: 'Notamos que você deixou alguns produtos incríveis no seu carrinho. Não perca essa oportunidade!',
+    },
+    email_2: {
+      subject: '{{customerName}}, seus produtos ainda estão esperando!',
+      message: 'Ainda está pensando? Seus produtos favoritos estão reservados, mas não por muito tempo!',
+    },
+    email_3: {
+      subject: 'Última chance! {{customerName}}, finalize sua compra',
+      message: 'Esta é sua última oportunidade de finalizar sua compra antes que os produtos voltem para o estoque.',
+    },
+  });
   const [uploading, setUploading] = useState(false);
 
   async function handleUpdateSettings(event: React.FormEvent<HTMLFormElement>) {
@@ -58,6 +86,7 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
         delay_hours: delayHours,
         interval_hours: intervalHours,
         max_emails: maxEmails,
+        templates,
       };
 
       const { error } = await supabase
@@ -426,6 +455,88 @@ export function RecoverySettingsForm({ user, profile }: RecoverySettingsFormProp
               Mensagem que aparecerá no email de recuperação
             </p>
           </div>
+        </div>
+      </div>
+
+      {/* Templates Personalizáveis */}
+      <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <SectionTitle
+          title="Templates de Email"
+          description="Personalize o assunto e mensagem de cada email de recuperação"
+        />
+
+        <div className="mt-6 space-y-6">
+          {[1, 2, 3].map((num) => (
+            <div key={num} className="rounded-lg border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-white p-5">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="rounded-lg bg-purple-100 p-2">
+                  <FileText className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">{num}º Email</h4>
+                  <p className="text-xs text-gray-500">
+                    {num === 1 && `Enviado ${delayHours}h após abandono`}
+                    {num === 2 && `Enviado ${delayHours + intervalHours}h após abandono`}
+                    {num === 3 && `Enviado ${delayHours + (intervalHours * 2)}h após abandono`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <Sparkles className="h-4 w-4" />
+                    Assunto do Email
+                  </label>
+                  <input
+                    type="text"
+                    value={templates[`email_${num}` as keyof typeof templates]?.subject || ''}
+                    onChange={(e) => setTemplates({
+                      ...templates,
+                      [`email_${num}`]: {
+                        ...templates[`email_${num}` as keyof typeof templates],
+                        subject: e.target.value,
+                      }
+                    })}
+                    placeholder={`Assunto do ${num}º email...`}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <MessageSquare className="h-4 w-4" />
+                    Mensagem
+                  </label>
+                  <textarea
+                    value={templates[`email_${num}` as keyof typeof templates]?.message || ''}
+                    onChange={(e) => setTemplates({
+                      ...templates,
+                      [`email_${num}`]: {
+                        ...templates[`email_${num}` as keyof typeof templates],
+                        message: e.target.value,
+                      }
+                    })}
+                    rows={3}
+                    placeholder={`Mensagem do ${num}º email...`}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Variáveis Disponíveis */}
+        <div className="mt-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+          <p className="text-sm font-semibold text-blue-900 mb-2">📝 Variáveis Disponíveis:</p>
+          <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
+            <div><code className="bg-blue-100 px-2 py-0.5 rounded">{'{{customerName}}'}</code> - Nome do cliente</div>
+            <div><code className="bg-blue-100 px-2 py-0.5 rounded">{'{{storeName}}'}</code> - Nome da loja</div>
+          </div>
+          <p className="mt-2 text-xs text-blue-700">
+            Use essas variáveis no assunto e mensagem para personalizar os emails.
+          </p>
         </div>
       </div>
 
