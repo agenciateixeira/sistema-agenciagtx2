@@ -10,5 +10,15 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/jobs/send-recovery-emails",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/jobs/check-alerts",
+      "schedule": "*/15 * * * *"
+    }
   ]
 }
