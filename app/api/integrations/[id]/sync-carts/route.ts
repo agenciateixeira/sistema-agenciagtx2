@@ -65,7 +65,6 @@ export async function POST(
                   currencyCode
                 }
               }
-              currencyCode
               customer {
                 id
                 email
