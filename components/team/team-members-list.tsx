@@ -121,9 +121,9 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
               </div>
             </div>
 
-            <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-end">
+            <div className="flex w-full flex-col gap-3 sm:w-auto sm:items-start">
               {editing === member.id ? (
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-start">
                   <select
                     value={selectedRole}
                     onChange={(e) => setSelectedRole(e.target.value)}
@@ -149,7 +149,7 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                   </button>
                 </div>
               ) : (
-                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end">
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-start">
                   <div className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${roleColors[role]}`}>
                     <RoleIcon className="h-3.5 w-3.5" />
                     {roleLabels[role]}
@@ -162,7 +162,7 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                           setSelectedRole(role);
                           setEditing(member.id);
                         }}
-                        className="flex w-full items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100 sm:w-auto"
+                        className="flex items-center justify-center rounded-lg p-2 text-gray-600 hover:bg-gray-100"
                         type="button"
                         title="Editar permissões"
                       >
@@ -171,7 +171,7 @@ export function TeamMembersList({ members, currentUserId }: TeamMembersListProps
                       <button
                         onClick={() => handleDelete(member.id)}
                         disabled={deleting === member.id}
-                        className="flex w-full items-center justify-center rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50 sm:w-auto"
+                        className="flex items-center justify-center rounded-lg p-2 text-red-600 hover:bg-red-50 disabled:opacity-50"
                         type="button"
                         title="Remover membro"
                       >
