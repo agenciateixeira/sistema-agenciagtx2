@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { ShoppingCart, Mail, ExternalLink, Package } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface AbandonedCart {
   id: string;
@@ -22,11 +24,40 @@ interface RecoveryCartsProps {
 }
 
 export function RecoveryCarts({ carts }: RecoveryCartsProps) {
+  const router = useRouter();
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+
   const formatCurrency = (value: number, currency: string) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: currency || 'BRL',
     }).format(value);
+  };
+
+  const handleSendRecoveryEmail = async (cartId: string, customerEmail: string) => {
+    if (confirm(`Enviar email de recuperação para ${customerEmail}?`)) {
+      setSendingEmail(cartId);
+      try {
+        const response = await fetch('/api/recovery/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cartId }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao enviar email');
+        }
+
+        alert('✅ Email de recuperação enviado com sucesso!');
+        router.refresh(); // Atualiza dados da página
+      } catch (error: any) {
+        alert(`❌ Erro ao enviar email: ${error.message}`);
+      } finally {
+        setSendingEmail(null);
+      }
+    }
   };
 
   const formatDate = (date: string) => {
@@ -181,11 +212,13 @@ export function RecoveryCarts({ carts }: RecoveryCartsProps) {
 
                   {!isPlaceholder && cart.status === 'abandoned' && (
                     <button
-                      className="inline-flex items-center gap-1 rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+                      onClick={() => handleSendRecoveryEmail(cart.id, cart.customer_email)}
+                      disabled={sendingEmail === cart.id}
+                      className="inline-flex items-center gap-1 rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Enviar email de recuperação"
                     >
                       <Mail className="h-3 w-3" />
-                      Recuperar
+                      {sendingEmail === cart.id ? 'Enviando...' : 'Recuperar'}
                     </button>
                   )}
                 </div>
