@@ -1,2 +1,5 @@
 # Force cache clear
 .vercel
+
+# Edge Functions do Supabase (Deno) - não devem ser compiladas pelo Next.js
+supabase/functions
