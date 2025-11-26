@@ -51,21 +51,33 @@ export async function POST(request: NextRequest) {
       const eventData = JSON.parse(bodyText);
 
       if (topic === 'checkouts/create' || topic === 'checkouts/update') {
-        const customerEmail = eventData.email || eventData.customer?.email || 'sem-email-no-webhook@debug.com';
+        const customerEmail = eventData.email
+          || eventData.customer?.email
+          || eventData.billing_address?.email
+          || eventData.shipping_address?.email
+          || 'sem-email-no-webhook@debug.com';
 
         console.log('📧 Email no webhook:', customerEmail);
+        console.log('🔍 Fontes:', {
+          root: eventData.email,
+          customer: eventData.customer?.email,
+          billing: eventData.billing_address?.email,
+          shipping: eventData.shipping_address?.email,
+        });
 
-        await supabase.from('abandoned_carts').insert({
+        await supabase.from('abandoned_carts').upsert({
           platform_cart_id: `debug_shopify_${eventData.id}`,
           user_id: 'ebe65fa6-f26b-4686-8ac2-557d03c89a6c',
           integration_id: '1e371393-e54c-45bd-ad5f-5153c3f4032e',
           customer_email: customerEmail,
-          customer_name: eventData.customer?.first_name || null,
+          customer_name: eventData.customer?.first_name || eventData.billing_address?.first_name || null,
           total_value: parseFloat(eventData.total_price || '0'),
           cart_items: eventData.line_items || [],
           status: 'abandoned',
           platform_data: eventData,
           abandoned_at: eventData.created_at || new Date().toISOString(),
+        }, {
+          onConflict: 'platform_cart_id',
         });
 
         console.log('✅ Carrinho debug salvo');
