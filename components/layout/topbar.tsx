@@ -119,7 +119,7 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
             </button>
 
             {showUserMenu && (
-              <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg">
+              <div className="absolute right-0 mt-2 w-full sm:w-48 rounded-lg border border-gray-200 bg-white shadow-lg z-50">
                 <form action={handleLogout}>
                   <button
                     type="submit"

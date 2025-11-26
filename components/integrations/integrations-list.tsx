@@ -219,7 +219,7 @@ export function IntegrationsList({ integrations }: IntegrationsListProps) {
               </p>
 
               {integration.store_url && (
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-gray-500 break-all">
                   {integration.store_url}
                 </p>
               )}

@@ -48,7 +48,7 @@ export function RecoveryCrossAnalysis({ crossData }: Props) {
 
       {/* 1. Coorte x UTM Source */}
       {crossData.cohortByUTM && crossData.cohortByUTM.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 md:p-6">
           <div className="flex items-center gap-2 mb-6">
             <Tag className="h-5 w-5 text-indigo-600" />
             <h3 className="text-lg font-semibold text-gray-900">
@@ -85,7 +85,7 @@ export function RecoveryCrossAnalysis({ crossData }: Props) {
 
       {/* 2. Coorte x Valor */}
       {crossData.cohortByValue && crossData.cohortByValue.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 md:p-6">
           <div className="flex items-center gap-2 mb-6">
             <DollarSign className="h-5 w-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">
@@ -130,7 +130,7 @@ export function RecoveryCrossAnalysis({ crossData }: Props) {
 
       {/* 3. Horário x Valor */}
       {crossData.timeByValue && crossData.timeByValue.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 md:p-6">
           <div className="flex items-center gap-2 mb-6">
             <Clock className="h-5 w-5 text-orange-600" />
             <h3 className="text-lg font-semibold text-gray-900">
@@ -140,7 +140,7 @@ export function RecoveryCrossAnalysis({ crossData }: Props) {
           <p className="text-sm text-gray-600 mb-4">
             Descubra em quais horários os carrinhos de maior valor são abandonados
           </p>
-          <div className="flex items-center gap-4 mb-4 text-sm">
+          <div className="flex flex-wrap items-center gap-4 mb-4 text-sm">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded" style={{ backgroundColor: COLORS.lowValue }} />
               <span>Até R$ 100</span>
@@ -173,7 +173,7 @@ export function RecoveryCrossAnalysis({ crossData }: Props) {
 
       {/* 4. UTM x Valor */}
       {crossData.utmByValue && crossData.utmByValue.length > 0 && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 md:p-6">
           <div className="flex items-center gap-2 mb-6">
             <Tag className="h-5 w-5 text-purple-600" />
             <h3 className="text-lg font-semibold text-gray-900">

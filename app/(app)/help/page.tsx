@@ -15,7 +15,7 @@ export default function HelpPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-lg border border-brand-200 bg-gradient-to-r from-brand-50 to-blue-50 p-8">
+      <div className="rounded-lg border border-brand-200 bg-gradient-to-r from-brand-50 to-blue-50 p-4 md:p-8">
         <div className="flex items-center gap-3">
           <div className="rounded-lg bg-brand-600 p-3">
             <Rocket className="h-6 w-6 text-white" />
@@ -139,7 +139,7 @@ export default function HelpPage() {
         />
 
         <div className="mt-6 space-y-4">
-          <div className="flex items-start gap-4 rounded-lg border border-gray-200 bg-gray-50 p-5">
+          <div className="flex items-start gap-4 rounded-lg border border-gray-200 bg-gray-50 p-4 md:p-5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
               1
             </div>
