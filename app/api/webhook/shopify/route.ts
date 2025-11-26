@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { randomUUID } from 'crypto';
 
 // Cliente Supabase service role (para operações do servidor)
 const supabase = createClient(
@@ -107,10 +108,17 @@ async function processCheckoutEvent(
     currency: checkout.currency,
   });
 
-  // Extrair dados importantes
-  const customerEmail = checkout.email || checkout.customer?.email;
+  // Extrair dados importantes - tentar múltiplas fontes para o email
+  const customerEmail = checkout.email
+    || checkout.customer?.email
+    || checkout.billing_address?.email
+    || checkout.shipping_address?.email
+    || null;
+
   const customerName = checkout.customer?.first_name
     ? `${checkout.customer.first_name} ${checkout.customer.last_name || ''}`.trim()
+    : checkout.billing_address?.first_name
+    ? `${checkout.billing_address.first_name} ${checkout.billing_address.last_name || ''}`.trim()
     : null;
 
   const cartValue = parseFloat(checkout.total_price || '0');
@@ -126,11 +134,19 @@ async function processCheckoutEvent(
     image_url: item.image_url,
   })) || [];
 
+  // Verificar se já existe webhook para este checkout
+  const { data: existing } = await supabase
+    .from('webhook_events')
+    .select('id')
+    .eq('integration_id', integrationId)
+    .eq('event_data->>id', checkout.id.toString())
+    .single();
+
   // Salvar/atualizar evento no banco
   const { error } = await supabase
     .from('webhook_events')
     .upsert({
-      id: `shopify_${checkout.id}`, // ID único para evitar duplicatas
+      id: existing?.id || randomUUID(), // Usar UUID existente ou gerar novo
       integration_id: integrationId,
       user_id: userId,
       event_type: topic === 'checkouts/create' ? 'checkout_created' : 'checkout_updated',
@@ -301,11 +317,11 @@ async function processOrderEvent(
     }
   }
 
-  // Salvar evento de order também
+  // Salvar evento de order também (com UUID válido)
   const { error } = await supabase
     .from('webhook_events')
     .insert({
-      id: `shopify_order_${order.id}`,
+      id: randomUUID(),
       integration_id: integrationId,
       user_id: userId,
       event_type: 'order_created',
