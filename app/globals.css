@@ -48,8 +48,8 @@ a {
 }
 
 @media (max-width: 640px) {
-  .flex.items-center.justify-between,
-  .flex.items-start.justify-between {
+  .flex.items-center.justify-between:not(.no-stack),
+  .flex.items-start.justify-between:not(.no-stack) {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
