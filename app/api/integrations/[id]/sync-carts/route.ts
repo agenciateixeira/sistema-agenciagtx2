@@ -45,73 +45,92 @@ export async function POST(
     const storeUrl = integration.store_url.replace('https://', '').replace('http://', '');
     const shopDomain = storeUrl.split('/')[0];
 
-    // Buscar checkouts abandonados da Shopify
-    // API: /admin/api/2024-10/checkouts.json?status=open
-    const apiUrl = `https://${shopDomain}/admin/api/2024-10/checkouts.json?status=open&limit=250`;
-    console.log('📡 URL da API:', apiUrl);
+    // Usar GraphQL API para buscar abandoned checkouts (inclui email!)
+    const graphqlUrl = `https://${shopDomain}/admin/api/2024-10/graphql.json`;
+    console.log('📡 Usando GraphQL API:', graphqlUrl);
 
-    const response = await fetch(apiUrl, {
+    const graphqlQuery = `
+      query {
+        abandonedCheckouts(first: 250) {
+          edges {
+            node {
+              id
+              createdAt
+              updatedAt
+              completedAt
+              abandonedCheckoutUrl
+              totalPriceSet {
+                shopMoney {
+                  amount
+                  currencyCode
+                }
+              }
+              currencyCode
+              customer {
+                id
+                email
+                firstName
+                lastName
+              }
+              lineItems(first: 50) {
+                edges {
+                  node {
+                    id
+                    title
+                    quantity
+                    variant {
+                      id
+                      price
+                      image {
+                        url
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    const response = await fetch(graphqlUrl, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'X-Shopify-Access-Token': integration.api_key,
       },
+      body: JSON.stringify({ query: graphqlQuery }),
     });
 
     console.log('📊 Status da resposta:', response.status);
 
     const data = await response.json();
-    console.log('📦 Dados recebidos:', JSON.stringify(data, null, 2));
 
-    if (!response.ok) {
-      console.error('❌ Erro ao buscar checkouts:', data);
+    if (!response.ok || data.errors) {
+      console.error('❌ Erro GraphQL:', data);
       return NextResponse.json(
         {
-          error: data.errors || data.error || 'Erro ao buscar checkouts da Shopify',
+          error: data.errors || 'Erro ao buscar checkouts da Shopify',
           details: data,
-          status: response.status,
         },
         { status: response.status }
       );
     }
 
-    const checkouts = data.checkouts || [];
-    console.log(`📦 Encontrados ${checkouts.length} checkouts`);
+    const allCheckouts = data.data?.abandonedCheckouts?.edges?.map((edge: any) => edge.node) || [];
+    console.log(`📦 Encontrados ${allCheckouts.length} checkouts abandonados via GraphQL`);
 
-    // Log de cada checkout encontrado
-    if (checkouts.length > 0) {
-      checkouts.forEach((c: any, idx: number) => {
-        console.log(`  ${idx + 1}. ID: ${c.id}, Email: ${c.email}, Total: ${c.total_price}, Created: ${c.created_at}`);
+    if (allCheckouts.length > 0) {
+      allCheckouts.forEach((c: any, idx: number) => {
+        console.log(`  ${idx + 1}. ID: ${c.id}, Email: ${c.customer?.email}, Total: ${c.totalPriceSet?.shopMoney?.amount}`);
       });
-    } else {
-      console.log('⚠️ Nenhum checkout encontrado. Verifique:');
-      console.log('  - Se existem checkouts abandonados na Shopify');
-      console.log('  - Se a API key tem permissão read_checkouts');
-      console.log('  - Se os checkouts têm status "open"');
-    }
-
-    // Se não encontrou com status=open, tentar sem filtro de status
-    let allCheckouts = checkouts;
-    if (checkouts.length === 0) {
-      console.log('🔄 Tentando buscar checkouts sem filtro de status...');
-      const response2 = await fetch(
-        `https://${shopDomain}/admin/api/2024-10/checkouts.json?limit=250`,
-        {
-          headers: {
-            'X-Shopify-Access-Token': integration.api_key,
-          },
-        }
-      );
-
-      if (response2.ok) {
-        const data2 = await response2.json();
-        allCheckouts = data2.checkouts || [];
-        console.log(`📦 Encontrados ${allCheckouts.length} checkouts (sem filtro)`);
-      }
     }
 
     if (allCheckouts.length === 0) {
       return NextResponse.json({
         success: true,
-        message: 'Nenhum carrinho abandonado encontrado. Verifique se a API key tem permissão "read_checkouts" e se existem checkouts na loja.',
+        message: 'Nenhum carrinho abandonado encontrado.',
         imported: 0,
         suggestion: 'Crie um checkout de teste na loja e tente novamente.',
       });
@@ -122,52 +141,27 @@ export async function POST(
     let skipped = 0;
     const skipReasons: string[] = [];
 
-    // Processar cada checkout
+    // Processar cada checkout (GraphQL format)
     for (const checkout of allCheckouts) {
       try {
-        console.log(`\n🔍 Processando checkout ${checkout.id}:`);
+        // Extrair ID numérico do GID (gid://shopify/Checkout/123 -> 123)
+        const checkoutIdMatch = checkout.id.match(/\/(\d+)$/);
+        const checkoutId = checkoutIdMatch ? checkoutIdMatch[1] : checkout.id;
 
-        // Primeiro, tentar pegar email direto do checkout
-        let customerEmail = checkout.email || checkout.billing_address?.email || checkout.shipping_address?.email;
+        console.log(`\n🔍 Processando checkout ${checkoutId}:`);
 
-        console.log(`   - Email no checkout: ${customerEmail || 'N/A'}`);
-        console.log(`   - Customer ID: ${checkout.customer?.id || 'N/A'}`);
+        // Email vem direto do customer na GraphQL API
+        const customerEmail = checkout.customer?.email;
 
-        // Se não tem email mas tem customer ID, buscar na API de Customers
-        if (!customerEmail && checkout.customer?.id) {
-          console.log(`   🔍 Buscando email do customer ${checkout.customer.id}...`);
+        console.log(`   - Email: ${customerEmail || 'N/A'}`);
+        console.log(`   - Customer: ${checkout.customer?.firstName || 'N/A'} ${checkout.customer?.lastName || ''}`);
+        console.log(`   - Total: ${checkout.totalPriceSet?.shopMoney?.amount || '0'} ${checkout.totalPriceSet?.shopMoney?.currencyCode || 'BRL'}`);
+        console.log(`   - Created: ${checkout.createdAt}`);
+        console.log(`   - Completed: ${checkout.completedAt || 'N/A'}`);
 
-          try {
-            const customerResponse = await fetch(
-              `https://${shopDomain}/admin/api/2024-10/customers/${checkout.customer.id}.json`,
-              {
-                headers: {
-                  'X-Shopify-Access-Token': integration.api_key,
-                },
-              }
-            );
-
-            const customerData = await customerResponse.json();
-            console.log(`   📦 Resposta da API de Customer (status ${customerResponse.status}):`, JSON.stringify(customerData, null, 2));
-
-            if (customerResponse.ok && customerData.customer) {
-              customerEmail = customerData.customer.email;
-              console.log(`   ✅ Email extraído: ${customerEmail}`);
-            } else {
-              console.log(`   ⚠️ Erro ao buscar customer ou sem dados`);
-            }
-          } catch (error: any) {
-            console.log(`   ⚠️ Erro na API de customer: ${error.message}`);
-          }
-        }
-
-        console.log(`   - Total: ${checkout.total_price || '0'}`);
-        console.log(`   - Created: ${checkout.created_at}`);
-        console.log(`   - Completed: ${checkout.completed_at || 'N/A'}`);
-
-        // Verificar se conseguimos o email
+        // Verificar se tem email
         if (!customerEmail) {
-          const reason = `Checkout ${checkout.id}: sem email (customer ID: ${checkout.customer?.id || 'N/A'})`;
+          const reason = `Checkout ${checkoutId}: sem email`;
           console.log(`   ⏭️  PULADO: ${reason}`);
           skipReasons.push(reason);
           skipped++;
@@ -175,66 +169,70 @@ export async function POST(
         }
 
         // Pular checkouts completados
-        if (checkout.completed_at) {
-          const reason = `Checkout ${checkout.id}: já completado em ${checkout.completed_at}`;
+        if (checkout.completedAt) {
+          const reason = `Checkout ${checkoutId}: já completado em ${checkout.completedAt}`;
           console.log(`   ⏭️  PULADO: ${reason}`);
           skipReasons.push(reason);
           skipped++;
           continue;
         }
 
-        const customerName = checkout.customer?.first_name
-          ? `${checkout.customer.first_name} ${checkout.customer.last_name || ''}`.trim()
+        const customerName = checkout.customer?.firstName
+          ? `${checkout.customer.firstName} ${checkout.customer.lastName || ''}`.trim()
           : null;
 
-        const cartValue = parseFloat(checkout.total_price || '0');
+        const cartValue = parseFloat(checkout.totalPriceSet?.shopMoney?.amount || '0');
+        const currency = checkout.totalPriceSet?.shopMoney?.currencyCode || 'BRL';
 
-        // Produtos no carrinho
-        const lineItems = checkout.line_items?.map((item: any) => ({
-          product_id: item.product_id,
-          variant_id: item.variant_id,
-          title: item.title,
-          quantity: item.quantity,
-          price: item.price,
-          image_url: item.image_url,
-        })) || [];
+        // Produtos no carrinho (GraphQL format)
+        const lineItems = checkout.lineItems?.edges?.map((edge: any) => {
+          const item = edge.node;
+          return {
+            product_id: item.variant?.id || item.id,
+            variant_id: item.variant?.id,
+            title: item.title,
+            quantity: item.quantity,
+            price: item.variant?.price || '0',
+            image_url: item.variant?.image?.url,
+          };
+        }) || [];
 
-        // Extrair UTM params
-        const landingSite = checkout.landing_site || '';
-        const utmParams = extractUtmParams(landingSite, checkout.note_attributes);
+        // Extrair Customer ID numérico do GID
+        const customerIdMatch = checkout.customer?.id?.match(/\/(\d+)$/);
+        const customerId = customerIdMatch ? customerIdMatch[1] : checkout.customer?.id;
 
         // Salvar na tabela abandoned_carts
         const { error: cartError } = await supabase
           .from('abandoned_carts')
           .upsert({
-            id: `shopify_${checkout.id}`,
+            id: `shopify_${checkoutId}`,
             user_id: integration.user_id,
             integration_id: integrationId,
             customer_email: customerEmail,
             customer_name: customerName,
-            customer_id: checkout.customer?.id?.toString(),
-            cart_token: checkout.token,
-            checkout_url: checkout.abandoned_checkout_url,
+            customer_id: customerId?.toString(),
+            cart_token: null, // GraphQL não retorna token
+            checkout_url: checkout.abandonedCheckoutUrl,
             total_value: cartValue,
-            currency: checkout.currency || 'BRL',
+            currency: currency,
             cart_items: lineItems,
-            utm_source: utmParams.utm_source,
-            utm_medium: utmParams.utm_medium,
-            utm_campaign: utmParams.utm_campaign,
-            utm_term: utmParams.utm_term,
-            utm_content: utmParams.utm_content,
+            utm_source: null, // GraphQL não retorna UTM (podemos adicionar depois)
+            utm_medium: null,
+            utm_campaign: null,
+            utm_term: null,
+            utm_content: null,
             status: 'abandoned',
             platform_data: checkout,
-            abandoned_at: checkout.created_at || new Date().toISOString(),
+            abandoned_at: checkout.createdAt || new Date().toISOString(),
           }, {
             onConflict: 'id',
           });
 
         if (cartError) {
-          console.error(`❌ Erro ao salvar checkout ${checkout.id}:`, cartError);
+          console.error(`❌ Erro ao salvar checkout ${checkoutId}:`, cartError);
           errors++;
         } else {
-          console.log(`✅ Checkout ${checkout.id} importado`);
+          console.log(`✅ Checkout ${checkoutId} importado`);
           imported++;
         }
 
@@ -242,7 +240,7 @@ export async function POST(
         await supabase
           .from('webhook_events')
           .upsert({
-            id: `shopify_${checkout.id}`,
+            id: `shopify_${checkoutId}`,
             integration_id: integrationId,
             user_id: integration.user_id,
             event_type: 'checkout_created',
@@ -250,11 +248,11 @@ export async function POST(
             customer_email: customerEmail,
             customer_name: customerName,
             cart_value: cartValue,
-            currency: checkout.currency || 'BRL',
+            currency: currency,
             line_items: lineItems,
-            checkout_url: checkout.abandoned_checkout_url,
+            checkout_url: checkout.abandonedCheckoutUrl,
             processed: false,
-            created_at: checkout.created_at || new Date().toISOString(),
+            created_at: checkout.createdAt || new Date().toISOString(),
           }, {
             onConflict: 'id',
           });
