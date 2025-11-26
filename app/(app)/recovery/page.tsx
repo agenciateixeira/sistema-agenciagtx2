@@ -4,6 +4,7 @@ import { RecoverySettingsForm } from '@/components/recovery/recovery-settings-fo
 import { RecoveryTabs, TabPanel } from '@/components/recovery/recovery-tabs';
 import { RecoveryOverview } from '@/components/recovery/recovery-overview';
 import { RecoveryHistory } from '@/components/recovery/recovery-history';
+import { RecoveryCarts } from '@/components/recovery/recovery-carts';
 
 async function getSupabaseServer() {
   const cookieStore = cookies();
@@ -56,6 +57,14 @@ export default async function RecoveryPage() {
     .gte('created_at', thirtyDaysAgo.toISOString())
     .order('created_at', { ascending: false });
 
+  // Buscar carrinhos abandonados (últimos 30 dias)
+  const { data: abandonedCarts } = await supabase
+    .from('abandoned_carts')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('abandoned_at', thirtyDaysAgo.toISOString())
+    .order('abandoned_at', { ascending: false });
+
   return (
     <div className="space-y-6">
       <div>
@@ -68,6 +77,10 @@ export default async function RecoveryPage() {
       <RecoveryTabs defaultTab="overview">
         <TabPanel id="overview">
           <RecoveryOverview stats={stats || []} />
+        </TabPanel>
+
+        <TabPanel id="carts">
+          <RecoveryCarts carts={abandonedCarts || []} />
         </TabPanel>
 
         <TabPanel id="history">
