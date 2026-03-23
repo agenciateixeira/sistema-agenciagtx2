@@ -97,36 +97,53 @@ export function CreativeCard({ creative }: CreativeCardProps) {
 
         {/* Métricas */}
         {insights ? (
-          <div className="mt-3 grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
-            <div>
-              <p className="text-[10px] font-medium uppercase text-gray-400">Gasto</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(insights.spend)}</p>
+          <>
+            <div className="mt-3 grid grid-cols-3 gap-2 border-t border-gray-100 pt-3">
+              <div>
+                <p className="text-[10px] font-medium uppercase text-gray-400">Gasto</p>
+                <p className="text-sm font-bold text-gray-900">{formatCurrency(insights.spend)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium uppercase text-gray-400">CTR</p>
+                <p className={`text-sm font-bold ${insights.ctr >= 1.5 ? 'text-green-600' : insights.ctr >= 1.0 ? 'text-gray-900' : 'text-red-600'}`}>
+                  {insights.ctr.toFixed(2)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium uppercase text-gray-400">CPC</p>
+                <p className="text-sm font-bold text-gray-900">{formatCurrency(insights.cpc)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium uppercase text-gray-400">Impressões</p>
+                <p className="text-sm font-bold text-gray-900">{formatNumber(insights.impressions)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium uppercase text-gray-400">Frequência</p>
+                <p className={`text-sm font-bold ${insights.frequency >= 3.5 ? 'text-red-600' : insights.frequency >= 2.5 ? 'text-yellow-600' : 'text-gray-900'}`}>
+                  {insights.frequency.toFixed(1)}x
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-medium uppercase text-gray-400">Conv.</p>
+                <p className="text-sm font-bold text-gray-900">{insights.conversions}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[10px] font-medium uppercase text-gray-400">CTR</p>
-              <p className={`text-sm font-bold ${insights.ctr >= 1.5 ? 'text-green-600' : insights.ctr >= 1.0 ? 'text-gray-900' : 'text-red-600'}`}>
-                {insights.ctr.toFixed(2)}%
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium uppercase text-gray-400">CPC</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(insights.cpc)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium uppercase text-gray-400">Impressões</p>
-              <p className="text-sm font-bold text-gray-900">{formatNumber(insights.impressions)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium uppercase text-gray-400">Frequência</p>
-              <p className={`text-sm font-bold ${insights.frequency >= 3.5 ? 'text-red-600' : insights.frequency >= 2.5 ? 'text-yellow-600' : 'text-gray-900'}`}>
-                {insights.frequency.toFixed(1)}x
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] font-medium uppercase text-gray-400">Conv.</p>
-              <p className="text-sm font-bold text-gray-900">{insights.conversions}</p>
-            </div>
-          </div>
+
+            {/* Engagement row */}
+            {(insights.likes > 0 || insights.comments > 0 || insights.shares > 0) && (
+              <div className="mt-2 flex items-center gap-3 border-t border-gray-100 pt-2">
+                {insights.likes > 0 && (
+                  <span className="text-[10px] text-pink-600 font-medium">{formatNumber(insights.likes)} curtidas</span>
+                )}
+                {insights.comments > 0 && (
+                  <span className="text-[10px] text-amber-600 font-medium">{formatNumber(insights.comments)} coment.</span>
+                )}
+                {insights.shares > 0 && (
+                  <span className="text-[10px] text-green-600 font-medium">{formatNumber(insights.shares)} shares</span>
+                )}
+              </div>
+            )}
+          </>
         ) : (
           <div className="mt-3 border-t border-gray-100 pt-3">
             <p className="text-xs text-gray-400">Sem dados de performance</p>

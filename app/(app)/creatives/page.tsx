@@ -131,13 +131,16 @@ export default async function CreativesPage() {
     );
   }
 
+  // Listar contas disponíveis para o seletor multi-tenant
+  const adAccounts = (metaConnection.ad_account_ids as any[]) || [];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Análise de Criativos</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Performance detalhada, análise de fadiga e dados de cada criativo
+            Performance detalhada, análise de fadiga, engajamento e retenção de vídeo
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -160,6 +163,7 @@ export default async function CreativesPage() {
       <CreativesDashboardClient
         userId={user.id}
         primaryAdAccountId={metaConnection.primary_ad_account_id}
+        adAccounts={adAccounts}
       />
     </div>
   );

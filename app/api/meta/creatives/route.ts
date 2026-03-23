@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('user_id');
     const datePreset = searchParams.get('date_preset') || 'last_30d';
     const type = searchParams.get('type') || 'full'; // full | insights | details
+    const adAccountIdParam = searchParams.get('ad_account_id'); // Multi-tenant: conta específica
 
     if (!userId) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
@@ -55,11 +56,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!metaConnection.primary_ad_account_id) {
+    // Usar conta específica ou a primária
+    const adAccountId = adAccountIdParam || metaConnection.primary_ad_account_id;
+
+    if (!adAccountId) {
       return NextResponse.json(
         { error: 'No ad account configured' },
         { status: 400 }
       );
+    }
+
+    // Validar que a conta pertence ao usuário
+    if (adAccountIdParam && metaConnection.ad_account_ids) {
+      const validAccounts = (metaConnection.ad_account_ids as any[]).map((a: any) => a.account_id || a.id);
+      const cleanParam = adAccountIdParam.replace('act_', '');
+      if (!validAccounts.some((id: string) => id.replace('act_', '') === cleanParam)) {
+        return NextResponse.json(
+          { error: 'Ad account not found in your portfolio' },
+          { status: 403 }
+        );
+      }
     }
 
     // Descriptografar token
@@ -69,35 +85,32 @@ export async function GET(request: NextRequest) {
 
     switch (type) {
       case 'insights':
-        data = await getAdLevelInsights(
-          metaConnection.primary_ad_account_id,
-          accessToken,
-          datePreset
-        );
+        data = await getAdLevelInsights(adAccountId, accessToken, datePreset);
         break;
 
       case 'details':
-        data = await getCreativeDetails(
-          metaConnection.primary_ad_account_id,
-          accessToken
-        );
+        data = await getCreativeDetails(adAccountId, accessToken);
         break;
 
       case 'full':
       default:
-        data = await getCreativesWithInsights(
-          metaConnection.primary_ad_account_id,
-          accessToken,
-          datePreset
-        );
+        data = await getCreativesWithInsights(adAccountId, accessToken, datePreset);
         break;
     }
+
+    // Encontrar o nome da conta selecionada
+    const selectedAccount = metaConnection.ad_account_ids
+      ? (metaConnection.ad_account_ids as any[]).find((a: any) =>
+          (a.account_id || a.id || '').replace('act_', '') === adAccountId.replace('act_', '')
+        )
+      : null;
 
     return NextResponse.json({
       success: true,
       data,
-      account_name: metaConnection.meta_user_name,
-      ad_account_id: metaConnection.primary_ad_account_id,
+      account_name: selectedAccount?.name || metaConnection.meta_user_name,
+      ad_account_id: adAccountId,
+      available_accounts: metaConnection.ad_account_ids || [],
     });
   } catch (error: any) {
     console.error('❌ Erro ao buscar criativos:', error);

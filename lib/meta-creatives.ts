@@ -27,6 +27,33 @@ export interface CreativeInsight {
   roas: number | null;
   date_start: string;
   date_stop: string;
+  // Engagement metrics
+  likes: number;
+  comments: number;
+  shares: number;
+  saves: number;
+  link_clicks: number;
+  // Video retention metrics
+  video_plays: number;
+  video_thru_plays: number;
+  video_p25: number;
+  video_p50: number;
+  video_p75: number;
+  video_p95: number;
+  video_avg_time: number;
+}
+
+export interface DailyInsight {
+  date: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cpc: number;
+  reach: number;
+  conversions: number;
+  likes: number;
+  comments: number;
 }
 
 export interface CreativeDetail {
@@ -81,6 +108,13 @@ export async function getAdLevelInsights(
     'actions',
     'cost_per_action_type',
     'action_values',
+    'video_play_actions',
+    'video_thru_play_actions',
+    'video_p25_watched_actions',
+    'video_p50_watched_actions',
+    'video_p75_watched_actions',
+    'video_p95_watched_actions',
+    'video_avg_time_watched_actions',
   ].join(','));
   url.searchParams.set('level', 'ad');
   url.searchParams.set('limit', '500');
@@ -126,6 +160,17 @@ export async function getAdLevelInsights(
 
     const spend = parseFloat(data.spend || 0);
 
+    // Engagement metrics from actions
+    const getActionVal = (type: string) => {
+      if (!data.actions) return 0;
+      const found = data.actions.find((a: any) => a.action_type === type);
+      return found ? parseInt(found.value || 0) : 0;
+    };
+    const getVideoVal = (arr: any[] | undefined) => {
+      if (!arr || arr.length === 0) return 0;
+      return parseInt(arr[0]?.value || 0);
+    };
+
     return {
       ad_id: data.ad_id,
       ad_name: data.ad_name,
@@ -146,6 +191,20 @@ export async function getAdLevelInsights(
       roas: spend > 0 && totalConversionValue > 0 ? totalConversionValue / spend : null,
       date_start: data.date_start,
       date_stop: data.date_stop,
+      // Engagement
+      likes: getActionVal('post_reaction'),
+      comments: getActionVal('comment'),
+      shares: getActionVal('post'),
+      saves: getActionVal('onsite_conversion.post_save'),
+      link_clicks: getActionVal('link_click'),
+      // Video retention
+      video_plays: getVideoVal(data.video_play_actions),
+      video_thru_plays: getVideoVal(data.video_thru_play_actions),
+      video_p25: getVideoVal(data.video_p25_watched_actions),
+      video_p50: getVideoVal(data.video_p50_watched_actions),
+      video_p75: getVideoVal(data.video_p75_watched_actions),
+      video_p95: getVideoVal(data.video_p95_watched_actions),
+      video_avg_time: parseFloat(data.video_avg_time_watched_actions?.[0]?.value || 0),
     };
   });
 }
@@ -328,6 +387,64 @@ export async function getCreativesWithInsights(
       insights: insight,
       fatigue_score: fatigue.score,
       fatigue_level: fatigue.level,
+    };
+  });
+}
+
+/**
+ * Performance diária de um anúncio específico (para gráfico de timeline)
+ */
+export async function getAdDailyPerformance(
+  adId: string,
+  accessToken: string,
+  datePreset: string = 'last_30d'
+): Promise<DailyInsight[]> {
+  const url = new URL(`${GRAPH_API_URL}/${GRAPH_VERSION}/${adId}/insights`);
+  url.searchParams.set('access_token', accessToken);
+  url.searchParams.set('date_preset', datePreset);
+  url.searchParams.set('fields', [
+    'spend',
+    'impressions',
+    'clicks',
+    'cpc',
+    'ctr',
+    'reach',
+    'actions',
+  ].join(','));
+  url.searchParams.set('time_increment', '1');
+  url.searchParams.set('limit', '500');
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch daily performance');
+  }
+
+  const json = await response.json();
+
+  if (!json.data || json.data.length === 0) {
+    return [];
+  }
+
+  return json.data.map((d: any) => {
+    const getActionVal = (type: string) => {
+      if (!d.actions) return 0;
+      const found = d.actions.find((a: any) => a.action_type === type);
+      return found ? parseInt(found.value || 0) : 0;
+    };
+
+    return {
+      date: d.date_start,
+      spend: parseFloat(d.spend || 0),
+      impressions: parseInt(d.impressions || 0),
+      clicks: parseInt(d.clicks || 0),
+      ctr: parseFloat(d.ctr || 0),
+      cpc: parseFloat(d.cpc || 0),
+      reach: parseInt(d.reach || 0),
+      conversions: getActionVal('lead') + getActionVal('purchase') + getActionVal('offsite_conversion.fb_pixel_lead'),
+      likes: getActionVal('post_reaction'),
+      comments: getActionVal('comment'),
     };
   });
 }

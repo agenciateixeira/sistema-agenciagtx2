@@ -4,6 +4,8 @@ import { Image as ImageIcon, Video, Layers } from 'lucide-react';
 
 interface CreativesTableProps {
   creatives: any[];
+  onSelectCreative?: (creative: any) => void;
+  selectedAdId?: string;
 }
 
 const fatigueColors = {
@@ -41,13 +43,13 @@ function TypeIcon({ type }: { type: string }) {
   }
 }
 
-export function CreativesTable({ creatives }: CreativesTableProps) {
+export function CreativesTable({ creatives, onSelectCreative, selectedAdId }: CreativesTableProps) {
   return (
     <div className="overflow-auto rounded-lg border border-gray-200 bg-white shadow-sm">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            {['', 'Anúncio', 'Campanha', 'Tipo', 'Status', 'Gasto', 'Impressões', 'Cliques', 'CTR', 'CPC', 'Freq.', 'Conv.', 'Fadiga'].map((h) => (
+            {['', 'Anúncio', 'Campanha', 'Tipo', 'Status', 'Gasto', 'Impressões', 'Cliques', 'CTR', 'CPC', 'Freq.', 'Conv.', 'Curtidas', 'Coment.', 'Shares', 'Fadiga'].map((h) => (
               <th key={h} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                 {h}
               </th>
@@ -61,7 +63,13 @@ export function CreativesTable({ creatives }: CreativesTableProps) {
             const fl = c.fatigue_level as keyof typeof fatigueColors;
 
             return (
-              <tr key={c.ad_id} className="transition-colors hover:bg-gray-50">
+              <tr
+                key={c.ad_id}
+                onClick={() => onSelectCreative?.(c)}
+                className={`transition-colors cursor-pointer ${
+                  selectedAdId === c.ad_id ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'
+                }`}
+              >
                 <td className="px-4 py-3">
                   <div className="h-10 w-10 overflow-hidden rounded bg-gray-100">
                     {thumbnail ? (
@@ -116,6 +124,9 @@ export function CreativesTable({ creatives }: CreativesTableProps) {
                   ) : '-'}
                 </td>
                 <td className="whitespace-nowrap px-4 py-3 text-gray-600">{insights?.conversions ?? '-'}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-pink-600 font-medium">{insights?.likes || 0}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-amber-600 font-medium">{insights?.comments || 0}</td>
+                <td className="whitespace-nowrap px-4 py-3 text-green-600 font-medium">{insights?.shares || 0}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${fatigueColors[fl] || 'bg-gray-100 text-gray-700'}`}>
                     {fatigueLabels[fl] || '-'} ({c.fatigue_score})
