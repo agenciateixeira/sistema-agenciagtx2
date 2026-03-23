@@ -362,16 +362,10 @@ export function AdsDashboardClient({
           totalConversions={motorResult.total_conversions}
           avgCpa={motorResult.avg_cpa}
           activeAdsetsCount={motorResult.campaigns.reduce((s, c) => s + c.adsets_count, 0)}
-          onEditCampaign={(campaignId, newBudget) => {
-            toast.success(`Verba de campanha atualizada para R$ ${newBudget.toFixed(2)}`);
-          }}
-          onApplyDecision={(campaignId, action) => {
-            const campaign = motorResult.campaigns.find(c => c.campaign_id === campaignId);
-            if (campaign) {
-              toast.success(
-                `${DECISION_CONFIG_LABELS[action]}: ${campaign.campaign_name} (${campaign.suggested_budget_change > 0 ? '+' : ''}${campaign.suggested_budget_change}%)`
-              );
-            }
+          userId={userId}
+          onBudgetUpdated={() => {
+            // Recarregar dados após alteração de verba
+            fetchInsights();
           }}
         />
 
@@ -398,14 +392,6 @@ export function AdsDashboardClient({
     </div>
   );
 }
-
-const DECISION_CONFIG_LABELS: Record<string, string> = {
-  escalar: 'Escalando verba',
-  manter: 'Mantendo verba',
-  observar: 'Em observação',
-  reduzir: 'Reduzindo verba',
-  pausar: 'Pausando campanha',
-};
 
 // Helper: Build cohort data from daily insights
 function buildCohortData(dailyInsights: any[], accountInsights: any) {

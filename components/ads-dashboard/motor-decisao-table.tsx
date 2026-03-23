@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import toast from 'react-hot-toast';
 import {
   TrendingUp,
   TrendingDown,
@@ -23,8 +24,8 @@ interface MotorDecisaoTableProps {
   totalConversions: number;
   avgCpa: number;
   activeAdsetsCount: number;
-  onEditCampaign?: (campaignId: string, newBudget: number) => void;
-  onApplyDecision?: (campaignId: string, action: DecisionAction) => void;
+  userId: string;
+  onBudgetUpdated?: () => void;
 }
 
 function formatCurrency(value: number) {
@@ -84,13 +85,72 @@ export function MotorDecisaoTable({
   totalConversions,
   avgCpa,
   activeAdsetsCount,
-  onEditCampaign,
-  onApplyDecision,
+  userId,
+  onBudgetUpdated,
 }: MotorDecisaoTableProps) {
   const [expandedCampaign, setExpandedCampaign] = useState<string | null>(null);
   const [editingBudget, setEditingBudget] = useState<string | null>(null);
   const [budgetValue, setBudgetValue] = useState('');
   const [viewMode, setViewMode] = useState<'CPA' | 'ROAS'>('CPA');
+  const [updatingBudget, setUpdatingBudget] = useState<string | null>(null);
+
+  const updateBudgetViaAPI = useCallback(async (
+    campaignId: string,
+    newBudgetReais: number,
+    campaignName: string
+  ) => {
+    setUpdatingBudget(campaignId);
+    const toastId = toast.loading(`Atualizando verba de "${campaignName}"...`);
+
+    try {
+      const response = await fetch(`/api/meta/campaigns/budget?user_id=${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          campaign_id: campaignId,
+          budget_amount: newBudgetReais,
+          level: 'campaign',
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao atualizar verba');
+      }
+
+      toast.success(
+        `Verba de "${campaignName}" atualizada: R$ ${result.data.previous_daily_budget?.toFixed(2) || '?'} → R$ ${result.data.daily_budget?.toFixed(2) || newBudgetReais.toFixed(2)}`,
+        { id: toastId, duration: 5000 }
+      );
+
+      onBudgetUpdated?.();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar verba', { id: toastId });
+    } finally {
+      setUpdatingBudget(null);
+    }
+  }, [userId, onBudgetUpdated]);
+
+  const applyDecision = useCallback(async (campaign: CampaignDecision) => {
+    if (campaign.suggested_budget_change === 0 || campaign.suggested_budget_change === -100) {
+      toast.error('Pausar campanha requer ação manual no Meta Ads Manager');
+      return;
+    }
+
+    // Calculate new budget based on current spend and suggested change
+    // spend is for the period, estimate daily budget as spend / 7 (for last_7d)
+    const estimatedDailyBudget = campaign.spend / 7;
+    const changeMultiplier = 1 + (campaign.suggested_budget_change / 100);
+    const newBudget = Math.round(estimatedDailyBudget * changeMultiplier * 100) / 100;
+
+    if (newBudget <= 0) {
+      toast.error('Novo valor de verba inválido');
+      return;
+    }
+
+    await updateBudgetViaAPI(campaign.campaign_id, newBudget, campaign.campaign_name);
+  }, [updateBudgetViaAPI]);
 
   const handleToggle = (campaignId: string) => {
     setExpandedCampaign(prev => prev === campaignId ? null : campaignId);
@@ -101,12 +161,14 @@ export function MotorDecisaoTable({
     setBudgetValue(currentBudget.toFixed(2));
   };
 
-  const handleSaveEdit = (campaignId: string) => {
+  const handleSaveEdit = async (campaignId: string, campaignName: string) => {
     const newBudget = parseFloat(budgetValue);
-    if (!isNaN(newBudget) && newBudget > 0) {
-      onEditCampaign?.(campaignId, newBudget);
+    if (isNaN(newBudget) || newBudget <= 0) {
+      toast.error('Valor inválido');
+      return;
     }
     setEditingBudget(null);
+    await updateBudgetViaAPI(campaignId, newBudget, campaignName);
   };
 
   const handleExportCSV = () => {
@@ -309,16 +371,22 @@ export function MotorDecisaoTable({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              onApplyDecision?.(campaign.campaign_id, campaign.decision);
+                              applyDecision(campaign);
                             }}
-                            className={`rounded-md px-2 py-1 text-xs font-medium transition ${
+                            disabled={updatingBudget === campaign.campaign_id}
+                            className={`rounded-md px-2 py-1 text-xs font-medium transition disabled:opacity-50 ${
                               campaign.suggested_budget_change > 0
                                 ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                                : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : campaign.suggested_budget_change === -100
+                                  ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                  : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                             }`}
                           >
-                            {campaign.suggested_budget_change > 0 ? '+' : ''}
-                            {campaign.suggested_budget_change}%
+                            {updatingBudget === campaign.campaign_id
+                              ? '...'
+                              : campaign.suggested_budget_change === -100
+                                ? 'Pausar'
+                                : `${campaign.suggested_budget_change > 0 ? '+' : ''}${campaign.suggested_budget_change}%`}
                           </button>
                         )}
                         <button
@@ -407,11 +475,12 @@ export function MotorDecisaoTable({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleSaveEdit(campaign.campaign_id);
+                                handleSaveEdit(campaign.campaign_id, campaign.campaign_name);
                               }}
-                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700"
+                              disabled={updatingBudget === campaign.campaign_id}
+                              className="rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                             >
-                              Salvar
+                              {updatingBudget === campaign.campaign_id ? 'Salvando...' : 'Salvar'}
                             </button>
                             <button
                               onClick={(e) => {
