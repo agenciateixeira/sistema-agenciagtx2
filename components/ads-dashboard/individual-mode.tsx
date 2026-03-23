@@ -27,7 +27,10 @@ interface IndividualModeProps {
 }
 
 export function IndividualMode({ userId, datePreset, onDatePresetChange }: IndividualModeProps) {
+  console.log('[IndividualMode] 🔵 Componente montado - userId:', userId, 'datePreset:', datePreset);
   const { selectedAccount } = useMetaAccount();
+  console.log('[IndividualMode] 📊 selectedAccount:', selectedAccount);
+
   const [accountInsights, setAccountInsights] = useState<any>(null);
   const [campaignsInsights, setCampaignsInsights] = useState<any[]>([]);
   const [dailyInsights, setDailyInsights] = useState<any[]>([]);
@@ -36,65 +39,87 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('[IndividualMode] 🔄 useEffect triggered - selectedAccount:', selectedAccount?.name);
     if (selectedAccount) {
+      console.log('[IndividualMode] ✅ Chamando fetchInsights');
       fetchInsights();
+    } else {
+      console.log('[IndividualMode] ⚠️ selectedAccount é null, não vai buscar insights');
     }
   }, [datePreset, selectedAccount]);
 
   const fetchInsights = async () => {
-    if (!selectedAccount) return;
+    console.log('[IndividualMode] 📡 fetchInsights iniciado');
+    if (!selectedAccount) {
+      console.log('[IndividualMode] ❌ selectedAccount é null, abortando');
+      return;
+    }
 
+    console.log('[IndividualMode] 🔄 setLoading(true)');
     setLoading(true);
     setError(null);
 
     try {
       // Buscar insights da conta
-      const accountResponse = await fetch(
-        `/api/meta/insights?user_id=${userId}&type=account&date_preset=${datePreset}`
-      );
+      const accountUrl = `/api/meta/insights?user_id=${userId}&type=account&date_preset=${datePreset}`;
+      console.log('[IndividualMode] 📡 Fetch account insights:', accountUrl);
+
+      const accountResponse = await fetch(accountUrl);
+      console.log('[IndividualMode] 📥 Account response status:', accountResponse.status);
 
       if (!accountResponse.ok) {
         const errorData = await accountResponse.json();
+        console.log('[IndividualMode] ❌ Account response error:', errorData);
         throw new Error(errorData.error || 'Failed to fetch account insights');
       }
 
       const accountData = await accountResponse.json();
+      console.log('[IndividualMode] ✅ Account data:', accountData);
       setAccountInsights(accountData.data);
 
       // Buscar insights de campanhas
+      console.log('[IndividualMode] 📡 Fetch campaigns insights');
       const campaignsResponse = await fetch(
         `/api/meta/insights?user_id=${userId}&type=campaigns&date_preset=${datePreset}`
       );
 
       if (campaignsResponse.ok) {
         const campaignsData = await campaignsResponse.json();
+        console.log('[IndividualMode] ✅ Campaigns data:', campaignsData);
         setCampaignsInsights(campaignsData.data || []);
       }
 
       // Buscar insights diários
+      console.log('[IndividualMode] 📡 Fetch daily insights');
       const dailyResponse = await fetch(
         `/api/meta/insights?user_id=${userId}&type=daily&days=30`
       );
 
       if (dailyResponse.ok) {
         const dailyData = await dailyResponse.json();
+        console.log('[IndividualMode] ✅ Daily data received');
         setDailyInsights(dailyData.data || []);
       }
 
       // Buscar ROI
+      console.log('[IndividualMode] 📡 Fetch ROI data');
       const roiResponse = await fetch(
         `/api/meta/roi?user_id=${userId}&date_preset=${datePreset}`
       );
 
       if (roiResponse.ok) {
         const roiResult = await roiResponse.json();
+        console.log('[IndividualMode] ✅ ROI data received');
         setRoiData(roiResult.data);
       }
+
+      console.log('[IndividualMode] ✅ fetchInsights completo!');
     } catch (err: any) {
-      console.error('Error fetching insights:', err);
+      console.error('[IndividualMode] ❌ Error fetching insights:', err);
       setError(err.message);
       toast.error(err.message || 'Erro ao buscar métricas');
     } finally {
+      console.log('[IndividualMode] 🏁 setLoading(false)');
       setLoading(false);
     }
   };

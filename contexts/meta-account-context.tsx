@@ -48,34 +48,45 @@ export function MetaAccountProvider({
 
   // Carregar contas disponíveis
   const loadAccounts = useCallback(async () => {
+    console.log('[MetaAccountContext] 🔵 Iniciando loadAccounts para userId:', userId);
     try {
       setIsLoading(true);
+      console.log('[MetaAccountContext] 📡 Fazendo fetch para /api/meta/ad-accounts');
       const response = await fetch(`/api/meta/ad-accounts?user_id=${userId}`);
 
+      console.log('[MetaAccountContext] 📥 Response status:', response.status);
       if (!response.ok) {
+        console.log('[MetaAccountContext] ❌ Response não OK');
         throw new Error('Failed to load accounts');
       }
 
       const data = await response.json();
+      console.log('[MetaAccountContext] ✅ Dados recebidos:', data);
       const accountsList = data.accounts || [];
+      console.log('[MetaAccountContext] 📊 Total de contas:', accountsList.length);
       setAccounts(accountsList);
 
       // Verificar conta salva no localStorage
       const savedAccountId = localStorage.getItem('meta_selected_account_id');
+      console.log('[MetaAccountContext] 💾 Conta salva no localStorage:', savedAccountId);
+
       const savedAccount = accountsList.find((acc: MetaAccount) =>
         acc.account_id === savedAccountId || acc.id === savedAccountId
       );
 
       if (savedAccount) {
+        console.log('[MetaAccountContext] ✅ Conta salva encontrada:', savedAccount.name);
         setSelectedAccount(savedAccount);
       } else if (accountsList.length > 0) {
         // Se não tiver salvo, usar a primeira conta
+        console.log('[MetaAccountContext] 📌 Usando primeira conta:', accountsList[0].name);
         setSelectedAccount(accountsList[0]);
         localStorage.setItem('meta_selected_account_id', accountsList[0].account_id || accountsList[0].id);
       }
 
       // Carregar modo de visualização salvo
       const savedViewMode = localStorage.getItem('meta_view_mode');
+      console.log('[MetaAccountContext] 👁️ Modo de visualização salvo:', savedViewMode || 'single (default)');
       if (savedViewMode === 'compare' || savedViewMode === 'consolidated') {
         setViewMode(savedViewMode);
       }
@@ -85,14 +96,18 @@ export function MetaAccountProvider({
       if (savedCompareAccounts) {
         try {
           setCompareAccounts(JSON.parse(savedCompareAccounts));
+          console.log('[MetaAccountContext] 🔀 Contas para comparar carregadas');
         } catch (e) {
-          console.error('Error parsing compare accounts:', e);
+          console.error('[MetaAccountContext] ❌ Error parsing compare accounts:', e);
         }
       }
+
+      console.log('[MetaAccountContext] ✅ loadAccounts completo!');
     } catch (error) {
-      console.error('Error loading Meta accounts:', error);
+      console.error('[MetaAccountContext] ❌ Error loading Meta accounts:', error);
       toast.error('Erro ao carregar contas do Meta Ads');
     } finally {
+      console.log('[MetaAccountContext] 🏁 setIsLoading(false)');
       setIsLoading(false);
     }
   }, [userId]);

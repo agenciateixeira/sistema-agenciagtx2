@@ -15,7 +15,15 @@ interface AdsDashboardContentProps {
 }
 
 export function AdsDashboardContent({ userId, metaConnection }: AdsDashboardContentProps) {
+  console.log('[AdsDashboardContent] 🔵 Componente montado - userId:', userId);
+  console.log('[AdsDashboardContent] 🔗 metaConnection:', {
+    user_name: metaConnection.meta_user_name,
+    accounts: metaConnection.ad_account_ids?.length || 0
+  });
+
   const { viewMode, isLoading } = useMetaAccount();
+  console.log('[AdsDashboardContent] 📊 viewMode:', viewMode, 'isLoading:', isLoading);
+
   const [datePreset, setDatePreset] = useState<string>('last_30d');
 
   return (
@@ -67,23 +75,42 @@ export function AdsDashboardContent({ userId, metaConnection }: AdsDashboardCont
       <AccountSelectorHeader />
 
       {/* Conteúdo baseado no modo */}
-      {!isLoading && (
+      {!isLoading ? (
         <>
           {viewMode === 'single' && (
-            <IndividualMode
-              userId={userId}
-              datePreset={datePreset}
-              onDatePresetChange={setDatePreset}
-            />
+            <>
+              {console.log('[AdsDashboardContent] 🎯 Renderizando IndividualMode')}
+              <IndividualMode
+                userId={userId}
+                datePreset={datePreset}
+                onDatePresetChange={setDatePreset}
+              />
+            </>
           )}
 
           {viewMode === 'compare' && (
-            <CompareModeImproved userId={userId} datePreset={datePreset} />
+            <>
+              {console.log('[AdsDashboardContent] 🔀 Renderizando CompareModeImproved')}
+              <CompareModeImproved userId={userId} datePreset={datePreset} />
+            </>
           )}
 
           {viewMode === 'consolidated' && (
-            <ConsolidatedModeImproved userId={userId} datePreset={datePreset} />
+            <>
+              {console.log('[AdsDashboardContent] 📊 Renderizando ConsolidatedModeImproved')}
+              <ConsolidatedModeImproved userId={userId} datePreset={datePreset} />
+            </>
           )}
+        </>
+      ) : (
+        <>
+          {console.log('[AdsDashboardContent] ⏳ isLoading=true, mostrando loader')}
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+              <p className="mt-4 text-sm text-gray-600">Carregando contas...</p>
+            </div>
+          </div>
         </>
       )}
     </div>
