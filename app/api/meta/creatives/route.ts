@@ -66,18 +66,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validar que a conta pertence ao usuário
-    if (adAccountIdParam && metaConnection.ad_account_ids) {
-      const validAccounts = (metaConnection.ad_account_ids as any[]).map((a: any) => a.account_id || a.id);
-      const cleanParam = adAccountIdParam.replace('act_', '');
-      if (!validAccounts.some((id: string) => id.replace('act_', '') === cleanParam)) {
-        return NextResponse.json(
-          { error: 'Ad account not found in your portfolio' },
-          { status: 403 }
-        );
-      }
-    }
-
     // Descriptografar token
     const accessToken = decrypt(metaConnection.access_token_encrypted);
 
