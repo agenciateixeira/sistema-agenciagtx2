@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { appNavigation } from '@/lib/navigation';
-import { Bell, Search, User, LogOut, Menu, X } from 'lucide-react';
+import { Bell, User, LogOut, Menu, X } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -78,19 +78,14 @@ export function Topbar({ onMenuToggle, isMobileMenuOpen }: TopbarProps) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative hidden lg:block">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="search"
-              placeholder="Buscar..."
-              className="w-64 rounded-lg border border-gray-300 bg-white py-2 pl-10 pr-4 text-sm text-gray-900 placeholder:text-gray-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            />
-          </div>
-
-          <button className="relative rounded-lg border border-gray-300 p-2 text-gray-600 hover:bg-gray-50">
+          <Link
+            href="/notifications"
+            className="relative rounded-lg border border-gray-300 p-2 text-gray-600 hover:bg-gray-50 transition-colors"
+            title="Notificações"
+          >
             <Bell className="h-5 w-5" />
-            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-brand-600"></span>
-          </button>
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 animate-pulse rounded-full bg-brand-600"></span>
+          </Link>
 
           <div className="relative">
             <button
