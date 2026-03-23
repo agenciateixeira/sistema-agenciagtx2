@@ -9,6 +9,13 @@ import { CreativeFilters } from './creative-filters';
 import { VideoRetentionFunnel } from './video-retention-funnel';
 import { DailyPerformanceChart } from './daily-performance-chart';
 import { EngagementSummary } from './engagement-summary';
+import { HookHoldRates } from './hook-hold-rates';
+import { QualityScoreBadge } from './quality-score-badge';
+import { FatigueCurveChart } from './fatigue-curve-chart';
+import { WeeklyPhaseAnalysis } from './weekly-phase-analysis';
+import { PlacementBreakdown } from './placement-breakdown';
+import { ABComparison } from './ab-comparison';
+import { CTAAnalysis } from './cta-analysis';
 import {
   Loader2,
   AlertCircle,
@@ -18,6 +25,9 @@ import {
   ChevronDown,
   Building2,
   X,
+  GitCompare,
+  MapPin,
+  MousePointer,
 } from 'lucide-react';
 
 interface AdAccount {
@@ -45,7 +55,7 @@ export function CreativesDashboardClient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
-  const [sortBy, setSortBy] = useState<'spend' | 'ctr' | 'fatigue' | 'frequency' | 'cpc'>('spend');
+  const [sortBy, setSortBy] = useState<'spend' | 'ctr' | 'fatigue' | 'frequency' | 'cpc' | 'quality' | 'hook_rate'>('spend');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterType, setFilterType] = useState<'all' | 'image' | 'video' | 'carousel'>('all');
   const [filterStatus, setFilterStatus] = useState<'all' | 'ACTIVE' | 'PAUSED'>('all');
@@ -53,7 +63,10 @@ export function CreativesDashboardClient({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCreative, setSelectedCreative] = useState<any | null>(null);
   const [dailyData, setDailyData] = useState<any[]>([]);
+  const [weeklyPhases, setWeeklyPhases] = useState<any[]>([]);
   const [loadingDaily, setLoadingDaily] = useState(false);
+  const [showABComparison, setShowABComparison] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'placements' | 'cta'>('overview');
 
   const fetchCreatives = useCallback(async () => {
     setLoading(true);
@@ -95,8 +108,10 @@ export function CreativesDashboardClient({
       );
       const json = await res.json();
       setDailyData(json.data || []);
+      setWeeklyPhases(json.weekly_phases || []);
     } catch {
       setDailyData([]);
+      setWeeklyPhases([]);
     } finally {
       setLoadingDaily(false);
     }
@@ -106,6 +121,7 @@ export function CreativesDashboardClient({
     if (selectedCreative?.ad_id === creative.ad_id) {
       setSelectedCreative(null);
       setDailyData([]);
+      setWeeklyPhases([]);
     } else {
       setSelectedCreative(creative);
       fetchDailyPerformance(creative.ad_id);
@@ -117,6 +133,7 @@ export function CreativesDashboardClient({
     setShowAccountSelector(false);
     setSelectedCreative(null);
     setDailyData([]);
+    setWeeklyPhases([]);
   };
 
   // Filtrar e ordenar
@@ -136,6 +153,8 @@ export function CreativesDashboardClient({
         case 'fatigue': aVal = a.fatigue_score || 0; bVal = b.fatigue_score || 0; break;
         case 'frequency': aVal = a.insights?.frequency || 0; bVal = b.insights?.frequency || 0; break;
         case 'cpc': aVal = a.insights?.cpc || 0; bVal = b.insights?.cpc || 0; break;
+        case 'quality': aVal = a.quality_score || 0; bVal = b.quality_score || 0; break;
+        case 'hook_rate': aVal = a.insights?.hook_rate || 0; bVal = b.insights?.hook_rate || 0; break;
         default: aVal = 0; bVal = 0;
       }
       return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
@@ -174,6 +193,18 @@ export function CreativesDashboardClient({
     },
     { likes: 0, comments: 0, shares: 0, saves: 0, link_clicks: 0, impressions: 0, video_plays: 0, video_thru_plays: 0 }
   );
+
+  // Average quality score
+  const creativesWithScore = creatives.filter(c => c.quality_score > 0);
+  const avgQualityScore = creativesWithScore.length > 0
+    ? creativesWithScore.reduce((s, c) => s + c.quality_score, 0) / creativesWithScore.length
+    : 0;
+
+  // Average hook rate for videos
+  const videosWithHook = creatives.filter(c => c.insights?.hook_rate > 0);
+  const avgHookRate = videosWithHook.length > 0
+    ? videosWithHook.reduce((s, c) => s + c.insights.hook_rate, 0) / videosWithHook.length
+    : 0;
 
   const selectedAccountName = adAccounts.find(
     a => (a.account_id || a.id)?.replace('act_', '') === selectedAccountId?.replace('act_', '')
@@ -261,8 +292,8 @@ export function CreativesDashboardClient({
         </div>
       )}
 
-      {/* Resumo por tipo */}
-      <div className="grid gap-4 md:grid-cols-4">
+      {/* Summary Cards */}
+      <div className="grid gap-4 md:grid-cols-6">
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
@@ -270,7 +301,7 @@ export function CreativesDashboardClient({
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-900">{totalCreatives}</p>
-              <p className="text-xs text-gray-500">Total de Criativos</p>
+              <p className="text-xs text-gray-500">Total</p>
             </div>
           </div>
         </div>
@@ -307,6 +338,42 @@ export function CreativesDashboardClient({
             </div>
           </div>
         </div>
+        {/* Avg Quality Score */}
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+              avgQualityScore >= 6 ? 'bg-green-100' : avgQualityScore >= 4 ? 'bg-yellow-100' : 'bg-red-100'
+            }`}>
+              <span className={`text-sm font-black ${
+                avgQualityScore >= 6 ? 'text-green-600' : avgQualityScore >= 4 ? 'text-yellow-600' : 'text-red-600'
+              }`}>{avgQualityScore.toFixed(1)}</span>
+            </div>
+            <div>
+              <p className={`text-2xl font-bold ${
+                avgQualityScore >= 6 ? 'text-green-600' : avgQualityScore >= 4 ? 'text-yellow-600' : 'text-red-600'
+              }`}>{avgQualityScore.toFixed(1)}</p>
+              <p className="text-xs text-gray-500">Quality Score</p>
+            </div>
+          </div>
+        </div>
+        {/* Avg Hook Rate */}
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+              avgHookRate >= 15 ? 'bg-green-100' : avgHookRate >= 8 ? 'bg-yellow-100' : 'bg-red-100'
+            }`}>
+              <span className={`text-sm font-black ${
+                avgHookRate >= 15 ? 'text-green-600' : avgHookRate >= 8 ? 'text-yellow-600' : 'text-red-600'
+              }`}>%</span>
+            </div>
+            <div>
+              <p className={`text-2xl font-bold ${
+                avgHookRate >= 15 ? 'text-green-600' : avgHookRate >= 8 ? 'text-yellow-600' : 'text-red-600'
+              }`}>{avgHookRate.toFixed(1)}%</p>
+              <p className="text-xs text-gray-500">Hook Rate Médio</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Engagement Summary */}
@@ -315,107 +382,229 @@ export function CreativesDashboardClient({
       {/* Fadiga Summary */}
       <FatigueSummary counts={fatigueCounts} total={totalCreatives} />
 
-      {/* Filtros e controles */}
-      <CreativeFilters
-        datePreset={datePreset}
-        setDatePreset={setDatePreset}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        sortBy={sortBy}
-        setSortBy={setSortBy}
-        sortOrder={sortOrder}
-        setSortOrder={setSortOrder}
-        filterType={filterType}
-        setFilterType={setFilterType}
-        filterStatus={filterStatus}
-        setFilterStatus={setFilterStatus}
-        filterFatigue={filterFatigue}
-        setFilterFatigue={setFilterFatigue}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        totalResults={filtered.length}
-      />
+      {/* Tab Navigation for Analysis Sections */}
+      <div className="flex items-center gap-2 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+            activeTab === 'overview' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Criativos
+        </button>
+        <button
+          onClick={() => setActiveTab('placements')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+            activeTab === 'placements' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <MapPin className="h-3.5 w-3.5" />
+          Posicionamentos
+        </button>
+        <button
+          onClick={() => setActiveTab('cta')}
+          className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
+            activeTab === 'cta' ? 'border-green-600 text-green-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <MousePointer className="h-3.5 w-3.5" />
+          Análise de CTA
+        </button>
 
-      {/* Lista de criativos */}
-      <p className="text-xs text-gray-500">
-        Clique em um criativo para ver o funil de retenção de vídeo e a performance diária
-      </p>
+        {/* A/B Comparison toggle */}
+        <button
+          onClick={() => setShowABComparison(!showABComparison)}
+          className={`ml-auto flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+            showABComparison ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+          }`}
+        >
+          <GitCompare className="h-3.5 w-3.5" />
+          Comparar A/B
+        </button>
+      </div>
 
-      {filtered.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
-          <p className="text-sm text-gray-500">Nenhum criativo encontrado para os filtros selecionados</p>
-        </div>
-      ) : viewMode === 'grid' ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((creative) => (
-            <div
-              key={creative.ad_id}
-              onClick={() => handleSelectCreative(creative)}
-              className={`cursor-pointer rounded-lg transition-all ${
-                selectedCreative?.ad_id === creative.ad_id
-                  ? 'ring-2 ring-green-500 ring-offset-2'
-                  : 'hover:ring-1 hover:ring-gray-300'
-              }`}
-            >
-              <CreativeCard creative={creative} />
-            </div>
-          ))}
-        </div>
-      ) : (
-        <CreativesTable creatives={filtered} onSelectCreative={handleSelectCreative} selectedAdId={selectedCreative?.ad_id} />
+      {/* A/B Comparison Panel */}
+      {showABComparison && (
+        <ABComparison creatives={creatives} onClose={() => setShowABComparison(false)} />
       )}
 
-      {/* Detail Panel for Selected Creative */}
-      {selectedCreative && (
-        <div className="space-y-6 rounded-xl border-2 border-green-200 bg-green-50/30 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-900">
-                Detalhes: {selectedCreative.ad_name}
-              </h3>
-              <p className="text-sm text-gray-500">{selectedCreative.insights?.campaign_name}</p>
-            </div>
-            <button
-              onClick={() => { setSelectedCreative(null); setDailyData([]); }}
-              className="rounded-lg border border-gray-200 bg-white p-2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Video Retention Funnel */}
-            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                Funil de Retenção de Vídeo
-              </h4>
-              <VideoRetentionFunnel insights={selectedCreative.insights} />
-            </div>
-
-            {/* Engagement Breakdown */}
-            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-              <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                Engajamento do Criativo
-              </h4>
-              <CreativeEngagementDetail insights={selectedCreative.insights} />
-            </div>
-          </div>
-
-          {/* Daily Performance Chart */}
-          <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-            <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-              Performance ao Longo do Tempo
-            </h4>
-            {loadingDaily ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-                <span className="ml-3 text-sm text-gray-500">Carregando dados diários...</span>
-              </div>
-            ) : (
-              <DailyPerformanceChart data={dailyData} />
-            )}
-          </div>
+      {/* Tab Content */}
+      {activeTab === 'placements' && (
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            Performance por Posicionamento
+          </h3>
+          <PlacementBreakdown
+            userId={userId}
+            adAccountId={selectedAccountId}
+            datePreset={datePreset}
+          />
         </div>
+      )}
+
+      {activeTab === 'cta' && (
+        <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+            Performance por Tipo de CTA
+          </h3>
+          <CTAAnalysis creatives={creatives} />
+        </div>
+      )}
+
+      {activeTab === 'overview' && (
+        <>
+          {/* Filtros e controles */}
+          <CreativeFilters
+            datePreset={datePreset}
+            setDatePreset={setDatePreset}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            sortOrder={sortOrder}
+            setSortOrder={setSortOrder}
+            filterType={filterType}
+            setFilterType={setFilterType}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterFatigue={filterFatigue}
+            setFilterFatigue={setFilterFatigue}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            totalResults={filtered.length}
+          />
+
+          {/* Lista de criativos */}
+          <p className="text-xs text-gray-500">
+            Clique em um criativo para ver análise detalhada: funil de retenção, curva de fadiga, Hook/Hold Rate e performance semanal
+          </p>
+
+          {filtered.length === 0 ? (
+            <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+              <p className="text-sm text-gray-500">Nenhum criativo encontrado para os filtros selecionados</p>
+            </div>
+          ) : viewMode === 'grid' ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((creative) => (
+                <div
+                  key={creative.ad_id}
+                  onClick={() => handleSelectCreative(creative)}
+                  className={`cursor-pointer rounded-lg transition-all ${
+                    selectedCreative?.ad_id === creative.ad_id
+                      ? 'ring-2 ring-green-500 ring-offset-2'
+                      : 'hover:ring-1 hover:ring-gray-300'
+                  }`}
+                >
+                  <CreativeCard creative={creative} />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <CreativesTable creatives={filtered} onSelectCreative={handleSelectCreative} selectedAdId={selectedCreative?.ad_id} />
+          )}
+
+          {/* Detail Panel for Selected Creative */}
+          {selectedCreative && (
+            <div className="space-y-6 rounded-xl border-2 border-green-200 bg-green-50/30 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {selectedCreative.ad_name}
+                    </h3>
+                    <p className="text-sm text-gray-500">{selectedCreative.insights?.campaign_name}</p>
+                  </div>
+                  <QualityScoreBadge
+                    score={selectedCreative.quality_score || 0}
+                    level={selectedCreative.quality_level || 'poor'}
+                    size="md"
+                  />
+                </div>
+                <button
+                  onClick={() => { setSelectedCreative(null); setDailyData([]); setWeeklyPhases([]); }}
+                  className="rounded-lg border border-gray-200 bg-white p-2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Top row: Quality Score + Hook/Hold + Retention + Engagement */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Hook & Hold Rates */}
+                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    Hook Rate & Hold Rate
+                  </h4>
+                  <HookHoldRates insights={selectedCreative.insights} />
+                </div>
+
+                {/* Video Retention Funnel */}
+                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    Funil de Retenção de Vídeo
+                  </h4>
+                  <VideoRetentionFunnel insights={selectedCreative.insights} />
+                </div>
+
+                {/* Engagement Breakdown */}
+                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    Engajamento do Criativo
+                  </h4>
+                  <CreativeEngagementDetail insights={selectedCreative.insights} />
+                </div>
+              </div>
+
+              {/* Fatigue Curve */}
+              {!loadingDaily && dailyData.length >= 3 && (
+                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    Curva de Fadiga (Evolução ao Longo do Tempo)
+                  </h4>
+                  <FatigueCurveChart data={dailyData} />
+                </div>
+              )}
+
+              {/* Weekly Phase Analysis */}
+              {!loadingDaily && weeklyPhases.length >= 2 && (
+                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    Custo por Resultado por Fase (Semana a Semana)
+                  </h4>
+                  <WeeklyPhaseAnalysis phases={weeklyPhases} />
+                </div>
+              )}
+
+              {/* Placement Breakdown for this specific ad */}
+              <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                  Performance por Posicionamento
+                </h4>
+                <PlacementBreakdown
+                  userId={userId}
+                  adAccountId={selectedAccountId}
+                  datePreset={datePreset}
+                  adId={selectedCreative.ad_id}
+                />
+              </div>
+
+              {/* Daily Performance Chart */}
+              <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+                <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                  Performance ao Longo do Tempo
+                </h4>
+                {loadingDaily ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+                    <span className="ml-3 text-sm text-gray-500">Carregando dados diários...</span>
+                  </div>
+                ) : (
+                  <DailyPerformanceChart data={dailyData} />
+                )}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

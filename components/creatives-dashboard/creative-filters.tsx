@@ -136,6 +136,8 @@ export function CreativeFilters({
             <option value="cpc">Ordenar: CPC</option>
             <option value="frequency">Ordenar: Frequência</option>
             <option value="fatigue">Ordenar: Fadiga</option>
+            <option value="quality">Ordenar: Quality Score</option>
+            <option value="hook_rate">Ordenar: Hook Rate</option>
           </select>
           <button
             onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}

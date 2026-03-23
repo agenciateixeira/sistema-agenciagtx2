@@ -1,6 +1,6 @@
 'use client';
 
-import { Image as ImageIcon, Video, Layers, ExternalLink } from 'lucide-react';
+import { Image as ImageIcon, Video, Layers } from 'lucide-react';
 
 interface CreativeCardProps {
   creative: any;
@@ -11,6 +11,14 @@ const fatigueColors = {
   medium: { bg: 'bg-yellow-100', text: 'text-yellow-700', border: 'border-yellow-200', label: 'Atenção' },
   high: { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', label: 'Fadiga Alta' },
   critical: { bg: 'bg-red-100', text: 'text-red-700', border: 'border-red-200', label: 'Crítico' },
+};
+
+const qualityColors: Record<string, { bg: string; text: string }> = {
+  excellent: { bg: 'bg-green-500', text: 'text-white' },
+  good: { bg: 'bg-blue-500', text: 'text-white' },
+  average: { bg: 'bg-yellow-500', text: 'text-white' },
+  below_average: { bg: 'bg-orange-500', text: 'text-white' },
+  poor: { bg: 'bg-red-500', text: 'text-white' },
 };
 
 const statusColors: Record<string, string> = {
@@ -38,8 +46,10 @@ function TypeIcon({ type }: { type: string }) {
 
 export function CreativeCard({ creative }: CreativeCardProps) {
   const fatigue = fatigueColors[creative.fatigue_level as keyof typeof fatigueColors] || fatigueColors.low;
+  const qualityColor = qualityColors[creative.quality_level] || qualityColors.poor;
   const insights = creative.insights;
   const thumbnailUrl = creative.thumbnail_url || creative.image_url || creative.video_thumbnail_url;
+  const isVideo = creative.creative_type === 'video';
 
   return (
     <div className="group overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -72,8 +82,11 @@ export function CreativeCard({ creative }: CreativeCardProps) {
           </span>
         </div>
 
-        {/* Fatigue badge */}
-        <div className="absolute right-2 top-2">
+        {/* Quality Score badge (top right) */}
+        <div className="absolute right-2 top-2 flex flex-col gap-1 items-end">
+          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${qualityColor.bg} ${qualityColor.text}`}>
+            Score: {creative.quality_score?.toFixed(1) || '0.0'}
+          </span>
           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${fatigue.bg} ${fatigue.text}`}>
             Fadiga: {creative.fatigue_score}%
           </span>
@@ -128,6 +141,24 @@ export function CreativeCard({ creative }: CreativeCardProps) {
                 <p className="text-sm font-bold text-gray-900">{insights.conversions}</p>
               </div>
             </div>
+
+            {/* Hook & Hold Rate for videos */}
+            {isVideo && insights.video_thru_plays > 0 && (
+              <div className="mt-2 grid grid-cols-2 gap-2 border-t border-gray-100 pt-2">
+                <div className="rounded bg-blue-50 px-2 py-1.5 text-center">
+                  <p className="text-[9px] font-medium uppercase text-blue-500">Hook Rate</p>
+                  <p className={`text-sm font-bold ${insights.hook_rate >= 15 ? 'text-green-600' : insights.hook_rate >= 8 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {insights.hook_rate.toFixed(1)}%
+                  </p>
+                </div>
+                <div className="rounded bg-purple-50 px-2 py-1.5 text-center">
+                  <p className="text-[9px] font-medium uppercase text-purple-500">Hold Rate</p>
+                  <p className={`text-sm font-bold ${insights.hold_rate >= 25 ? 'text-green-600' : insights.hold_rate >= 12 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {insights.hold_rate.toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Engagement row */}
             {(insights.likes > 0 || insights.comments > 0 || insights.shares > 0) && (

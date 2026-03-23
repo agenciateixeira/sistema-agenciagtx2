@@ -1,7 +1,7 @@
 /**
  * Meta Creatives Insights Service
  * Busca dados de criativos e performance por anúncio
- * Análise de fadiga, CTR, frequência e thumbnails
+ * Análise de fadiga, CTR, frequência, Hook Rate, Hold Rate, Quality Score
  */
 
 const GRAPH_API_URL = 'https://graph.facebook.com';
@@ -41,6 +41,9 @@ export interface CreativeInsight {
   video_p75: number;
   video_p95: number;
   video_avg_time: number;
+  // New: Hook & Hold rates
+  hook_rate: number;   // ThruPlay / Impressions × 100
+  hold_rate: number;   // video_p95 / ThruPlay × 100
 }
 
 export interface DailyInsight {
@@ -51,9 +54,26 @@ export interface DailyInsight {
   ctr: number;
   cpc: number;
   reach: number;
+  frequency: number;
   conversions: number;
   likes: number;
   comments: number;
+  cost_per_result: number;
+}
+
+export interface PlacementInsight {
+  publisher_platform: string;
+  platform_position: string;
+  spend: number;
+  impressions: number;
+  clicks: number;
+  ctr: number;
+  cpc: number;
+  cpm: number;
+  conversions: number;
+  cost_per_result: number;
+  reach: number;
+  frequency: number;
 }
 
 export interface CreativeDetail {
@@ -75,6 +95,9 @@ export interface CreativeWithInsights extends CreativeDetail {
   insights: CreativeInsight | null;
   fatigue_score: number;
   fatigue_level: 'low' | 'medium' | 'high' | 'critical';
+  fatigue_reasons: string[];
+  quality_score: number;      // 0-10
+  quality_level: 'poor' | 'below_average' | 'average' | 'good' | 'excellent';
 }
 
 /**
@@ -108,6 +131,7 @@ export async function getAdLevelInsights(
     'actions',
     'cost_per_action_type',
     'action_values',
+    'video_play_actions',
   ].join(','));
   url.searchParams.set('level', 'ad');
   url.searchParams.set('limit', '500');
@@ -152,6 +176,7 @@ export async function getAdLevelInsights(
       : 0;
 
     const spend = parseFloat(data.spend || 0);
+    const impressions = parseInt(data.impressions || 0);
 
     // Engagement & video metrics from actions array
     const getActionVal = (type: string) => {
@@ -159,6 +184,23 @@ export async function getAdLevelInsights(
       const found = data.actions.find((a: any) => a.action_type === type);
       return found ? parseInt(found.value || 0) : 0;
     };
+
+    // video_play_actions is a separate field (not in actions array)
+    const videoPlays = data.video_play_actions
+      ? data.video_play_actions.reduce((sum: number, a: any) => sum + parseInt(a.value || 0), 0)
+      : getActionVal('video_view'); // fallback to ThruPlay
+
+    const videoThruPlays = getActionVal('video_view'); // ThruPlay
+    const videoP25 = getActionVal('video_p25_watched');
+    const videoP50 = getActionVal('video_p50_watched');
+    const videoP75 = getActionVal('video_p75_watched');
+    const videoP95 = getActionVal('video_p95_watched');
+
+    // Hook Rate: ThruPlay / Impressions (% of people who watched 3s+)
+    const hookRate = impressions > 0 ? (videoThruPlays / impressions) * 100 : 0;
+
+    // Hold Rate: p95 / ThruPlay (% of hooked people who watched almost all)
+    const holdRate = videoThruPlays > 0 ? (videoP95 / videoThruPlays) * 100 : 0;
 
     return {
       ad_id: data.ad_id,
@@ -168,7 +210,7 @@ export async function getAdLevelInsights(
       adset_id: data.adset_id,
       adset_name: data.adset_name,
       spend,
-      impressions: parseInt(data.impressions || 0),
+      impressions,
       clicks: parseInt(data.clicks || 0),
       cpc: parseFloat(data.cpc || 0),
       cpm: parseFloat(data.cpm || 0),
@@ -180,20 +222,23 @@ export async function getAdLevelInsights(
       roas: spend > 0 && totalConversionValue > 0 ? totalConversionValue / spend : null,
       date_start: data.date_start,
       date_stop: data.date_stop,
-      // Engagement (from actions)
+      // Engagement
       likes: getActionVal('post_reaction'),
       comments: getActionVal('comment'),
       shares: getActionVal('post'),
       saves: getActionVal('onsite_conversion.post_save'),
       link_clicks: getActionVal('link_click'),
-      // Video retention (from actions)
-      video_plays: getActionVal('video_view'),
-      video_thru_plays: getActionVal('video_view'), // thru_play = completed views
-      video_p25: getActionVal('video_p25_watched'),
-      video_p50: getActionVal('video_p50_watched'),
-      video_p75: getActionVal('video_p75_watched'),
-      video_p95: getActionVal('video_p95_watched'),
-      video_avg_time: 0, // not available as separate field in v22.0+
+      // Video retention
+      video_plays: videoPlays,
+      video_thru_plays: videoThruPlays,
+      video_p25: videoP25,
+      video_p50: videoP50,
+      video_p75: videoP75,
+      video_p95: videoP95,
+      video_avg_time: 0,
+      // Hook & Hold
+      hook_rate: hookRate,
+      hold_rate: holdRate,
     };
   });
 }
@@ -339,6 +384,12 @@ export function calculateFatigueScore(insight: CreativeInsight): {
     reasons.push(`CPM elevado: R$ ${insight.cpm.toFixed(2)}`);
   }
 
+  // Hook Rate baixo (para vídeos)
+  if (insight.video_thru_plays > 0 && insight.hook_rate < 5) {
+    score += 10;
+    reasons.push(`Hook Rate baixo: ${insight.hook_rate.toFixed(1)}%`);
+  }
+
   score = Math.min(score, 100);
 
   let level: 'low' | 'medium' | 'high' | 'critical';
@@ -348,6 +399,69 @@ export function calculateFatigueScore(insight: CreativeInsight): {
   else level = 'low';
 
   return { score, level, reasons };
+}
+
+/**
+ * Calcula Quality Score de um criativo
+ * Score 0-10: 0 = péssimo, 10 = excelente
+ *
+ * Componentes:
+ * - Hook Rate (30% para vídeos, 0% para imagens)
+ * - Hold Rate (20% para vídeos, 0% para imagens)
+ * - CTR (25% para imagens, 20% para vídeos)
+ * - Engagement Rate (15%)
+ * - Conversion efficiency (15%)
+ * - Inverse CPC (redistribuído se não for vídeo)
+ */
+export function calculateQualityScore(insight: CreativeInsight, isVideo: boolean): {
+  score: number;
+  level: 'poor' | 'below_average' | 'average' | 'good' | 'excellent';
+} {
+  let totalScore = 0;
+
+  if (isVideo) {
+    // Hook Rate score (0-10, benchmark ~15% is good)
+    const hookScore = Math.min(insight.hook_rate / 2, 10);
+    totalScore += hookScore * 0.30;
+
+    // Hold Rate score (0-10, benchmark ~20% is good)
+    const holdScore = Math.min(insight.hold_rate / 4, 10);
+    totalScore += holdScore * 0.20;
+
+    // CTR score
+    const ctrScore = Math.min(insight.ctr / 0.3, 10);
+    totalScore += ctrScore * 0.20;
+  } else {
+    // For images: CTR is more important
+    const ctrScore = Math.min(insight.ctr / 0.25, 10);
+    totalScore += ctrScore * 0.40;
+
+    // CPC efficiency (lower is better)
+    const cpcScore = insight.cpc > 0 ? Math.min(3 / insight.cpc, 1) * 10 : 5;
+    totalScore += cpcScore * 0.10;
+  }
+
+  // Engagement Rate
+  const totalEngagement = insight.likes + insight.comments + insight.shares;
+  const engagementRate = insight.impressions > 0 ? (totalEngagement / insight.impressions) * 100 : 0;
+  const engagementScore = Math.min(engagementRate / 0.5, 10);
+  totalScore += engagementScore * 0.15;
+
+  // Conversion efficiency
+  const convRate = insight.impressions > 0 ? (insight.conversions / insight.impressions) * 1000 : 0;
+  const convScore = Math.min(convRate / 2, 10);
+  totalScore += convScore * 0.15;
+
+  const score = Math.round(Math.min(totalScore, 10) * 10) / 10;
+
+  let level: 'poor' | 'below_average' | 'average' | 'good' | 'excellent';
+  if (score >= 8) level = 'excellent';
+  else if (score >= 6) level = 'good';
+  else if (score >= 4) level = 'average';
+  else if (score >= 2) level = 'below_average';
+  else level = 'poor';
+
+  return { score, level };
 }
 
 /**
@@ -370,18 +484,25 @@ export async function getCreativesWithInsights(
     const fatigue = insight
       ? calculateFatigueScore(insight)
       : { score: 0, level: 'low' as const, reasons: [] };
+    const isVideo = detail.creative_type === 'video';
+    const quality = insight
+      ? calculateQualityScore(insight, isVideo)
+      : { score: 0, level: 'poor' as const };
 
     return {
       ...detail,
       insights: insight,
       fatigue_score: fatigue.score,
       fatigue_level: fatigue.level,
+      fatigue_reasons: fatigue.reasons,
+      quality_score: quality.score,
+      quality_level: quality.level,
     };
   });
 }
 
 /**
- * Performance diária de um anúncio específico (para gráfico de timeline)
+ * Performance diária de um anúncio específico (para gráfico de timeline + curva de fadiga)
  */
 export async function getAdDailyPerformance(
   adId: string,
@@ -398,7 +519,9 @@ export async function getAdDailyPerformance(
     'cpc',
     'ctr',
     'reach',
+    'frequency',
     'actions',
+    'cost_per_action_type',
   ].join(','));
   url.searchParams.set('time_increment', '1');
   url.searchParams.set('limit', '500');
@@ -423,17 +546,136 @@ export async function getAdDailyPerformance(
       return found ? parseInt(found.value || 0) : 0;
     };
 
+    const conversions = getActionVal('lead') + getActionVal('purchase') + getActionVal('offsite_conversion.fb_pixel_lead');
+
+    const costPerResult = d.cost_per_action_type
+      ? d.cost_per_action_type.find((c: any) =>
+          ['lead', 'purchase', 'offsite_conversion.fb_pixel_lead', 'offsite_conversion.fb_pixel_purchase'].includes(c.action_type)
+        )?.value || 0
+      : 0;
+
+    const impressions = parseInt(d.impressions || 0);
+    const reach = parseInt(d.reach || 0);
+
     return {
       date: d.date_start,
       spend: parseFloat(d.spend || 0),
-      impressions: parseInt(d.impressions || 0),
+      impressions,
       clicks: parseInt(d.clicks || 0),
       ctr: parseFloat(d.ctr || 0),
       cpc: parseFloat(d.cpc || 0),
-      reach: parseInt(d.reach || 0),
-      conversions: getActionVal('lead') + getActionVal('purchase') + getActionVal('offsite_conversion.fb_pixel_lead'),
+      reach,
+      frequency: parseFloat(d.frequency || 0),
+      conversions,
       likes: getActionVal('post_reaction'),
       comments: getActionVal('comment'),
+      cost_per_result: parseFloat(costPerResult),
     };
   });
+}
+
+/**
+ * Busca insights com breakdown por posicionamento para uma conta
+ */
+export async function getPlacementBreakdown(
+  adAccountId: string,
+  accessToken: string,
+  datePreset: string = 'last_30d',
+  adId?: string
+): Promise<PlacementInsight[]> {
+  const cleanAccountId = adAccountId.replace('act_', '');
+
+  const baseUrl = adId
+    ? `${GRAPH_API_URL}/${GRAPH_VERSION}/${adId}/insights`
+    : `${GRAPH_API_URL}/${GRAPH_VERSION}/act_${cleanAccountId}/insights`;
+
+  const url = new URL(baseUrl);
+  url.searchParams.set('access_token', accessToken);
+  url.searchParams.set('date_preset', datePreset);
+  url.searchParams.set('fields', [
+    'spend',
+    'impressions',
+    'clicks',
+    'cpc',
+    'cpm',
+    'ctr',
+    'reach',
+    'frequency',
+    'actions',
+    'cost_per_action_type',
+  ].join(','));
+  url.searchParams.set('breakdowns', 'publisher_platform,platform_position');
+  if (!adId) {
+    url.searchParams.set('level', 'ad');
+  }
+  url.searchParams.set('limit', '500');
+
+  const response = await fetch(url.toString());
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error?.message || 'Failed to fetch placement breakdown');
+  }
+
+  const json = await response.json();
+
+  if (!json.data || json.data.length === 0) {
+    return [];
+  }
+
+  // Aggregate by platform+position
+  const aggregated = new Map<string, PlacementInsight>();
+
+  for (const d of json.data) {
+    const key = `${d.publisher_platform}|${d.platform_position}`;
+
+    const getActionVal = (type: string) => {
+      if (!d.actions) return 0;
+      const found = d.actions.find((a: any) => a.action_type === type);
+      return found ? parseInt(found.value || 0) : 0;
+    };
+
+    const conversions = getActionVal('lead') + getActionVal('purchase') +
+      getActionVal('offsite_conversion.fb_pixel_lead') + getActionVal('offsite_conversion.fb_pixel_purchase');
+
+    const costPerResult = d.cost_per_action_type
+      ? d.cost_per_action_type.find((c: any) =>
+          ['lead', 'purchase', 'offsite_conversion.fb_pixel_lead'].includes(c.action_type)
+        )?.value || 0
+      : 0;
+
+    const existing = aggregated.get(key);
+    if (existing) {
+      existing.spend += parseFloat(d.spend || 0);
+      existing.impressions += parseInt(d.impressions || 0);
+      existing.clicks += parseInt(d.clicks || 0);
+      existing.reach += parseInt(d.reach || 0);
+      existing.conversions += conversions;
+    } else {
+      aggregated.set(key, {
+        publisher_platform: d.publisher_platform,
+        platform_position: d.platform_position,
+        spend: parseFloat(d.spend || 0),
+        impressions: parseInt(d.impressions || 0),
+        clicks: parseInt(d.clicks || 0),
+        ctr: parseFloat(d.ctr || 0),
+        cpc: parseFloat(d.cpc || 0),
+        cpm: parseFloat(d.cpm || 0),
+        reach: parseInt(d.reach || 0),
+        frequency: parseFloat(d.frequency || 0),
+        conversions,
+        cost_per_result: parseFloat(costPerResult),
+      });
+    }
+  }
+
+  // Recalculate derived metrics for aggregated data
+  return Array.from(aggregated.values()).map(p => ({
+    ...p,
+    ctr: p.impressions > 0 ? (p.clicks / p.impressions) * 100 : 0,
+    cpc: p.clicks > 0 ? p.spend / p.clicks : 0,
+    cpm: p.impressions > 0 ? (p.spend / p.impressions) * 1000 : 0,
+    frequency: p.reach > 0 ? p.impressions / p.reach : 0,
+    cost_per_result: p.conversions > 0 ? p.spend / p.conversions : 0,
+  })).sort((a, b) => b.spend - a.spend);
 }

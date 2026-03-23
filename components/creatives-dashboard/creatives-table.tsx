@@ -22,6 +22,14 @@ const fatigueLabels = {
   critical: 'Crítico',
 };
 
+const qualityColors: Record<string, string> = {
+  excellent: 'bg-green-100 text-green-700',
+  good: 'bg-blue-100 text-blue-700',
+  average: 'bg-yellow-100 text-yellow-700',
+  below_average: 'bg-orange-100 text-orange-700',
+  poor: 'bg-red-100 text-red-700',
+};
+
 const statusColors: Record<string, string> = {
   ACTIVE: 'bg-green-100 text-green-700',
   PAUSED: 'bg-yellow-100 text-yellow-700',
@@ -49,8 +57,8 @@ export function CreativesTable({ creatives, onSelectCreative, selectedAdId }: Cr
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50">
-            {['', 'Anúncio', 'Campanha', 'Tipo', 'Status', 'Gasto', 'Impressões', 'Cliques', 'CTR', 'CPC', 'Freq.', 'Conv.', 'Curtidas', 'Coment.', 'Shares', 'Fadiga'].map((h) => (
-              <th key={h} className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+            {['', 'Anúncio', 'Tipo', 'Status', 'Score', 'Gasto', 'CTR', 'CPC', 'Freq.', 'Hook', 'Hold', 'Conv.', 'Curtidas', 'Fadiga'].map((h) => (
+              <th key={h} className="whitespace-nowrap px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
                 {h}
               </th>
             ))}
@@ -61,6 +69,8 @@ export function CreativesTable({ creatives, onSelectCreative, selectedAdId }: Cr
             const insights = c.insights;
             const thumbnail = c.thumbnail_url || c.image_url || c.video_thumbnail_url;
             const fl = c.fatigue_level as keyof typeof fatigueColors;
+            const ql = c.quality_level as keyof typeof qualityColors;
+            const isVideo = c.creative_type === 'video';
 
             return (
               <tr
@@ -70,7 +80,7 @@ export function CreativesTable({ creatives, onSelectCreative, selectedAdId }: Cr
                   selectedAdId === c.ad_id ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'
                 }`}
               >
-                <td className="px-4 py-3">
+                <td className="px-3 py-2.5">
                   <div className="h-10 w-10 overflow-hidden rounded bg-gray-100">
                     {thumbnail ? (
                       <img
@@ -86,13 +96,11 @@ export function CreativesTable({ creatives, onSelectCreative, selectedAdId }: Cr
                     )}
                   </div>
                 </td>
-                <td className="max-w-[200px] px-4 py-3">
+                <td className="max-w-[180px] px-3 py-2.5">
                   <p className="truncate font-medium text-gray-900" title={c.ad_name}>{c.ad_name}</p>
+                  <p className="truncate text-[10px] text-gray-400" title={insights?.campaign_name}>{insights?.campaign_name || '-'}</p>
                 </td>
-                <td className="max-w-[150px] px-4 py-3">
-                  <p className="truncate text-gray-500" title={insights?.campaign_name}>{insights?.campaign_name || '-'}</p>
-                </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1">
                     <TypeIcon type={c.creative_type} />
                     <span className="text-xs text-gray-600">
@@ -100,34 +108,49 @@ export function CreativesTable({ creatives, onSelectCreative, selectedAdId }: Cr
                     </span>
                   </div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 py-2.5">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${statusColors[c.status] || 'bg-gray-100 text-gray-700'}`}>
                     {c.status}
                   </span>
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 font-medium text-gray-900">{insights ? formatCurrency(insights.spend) : '-'}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-gray-600">{insights ? formatNumber(insights.impressions) : '-'}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-gray-600">{insights ? formatNumber(insights.clicks) : '-'}</td>
-                <td className="whitespace-nowrap px-4 py-3">
+                <td className="px-3 py-2.5">
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${qualityColors[ql] || 'bg-gray-100 text-gray-700'}`}>
+                    {(c.quality_score || 0).toFixed(1)}
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2.5 font-medium text-gray-900">{insights ? formatCurrency(insights.spend) : '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5">
                   {insights ? (
                     <span className={`font-medium ${insights.ctr >= 1.5 ? 'text-green-600' : insights.ctr >= 1.0 ? 'text-gray-900' : 'text-red-600'}`}>
                       {insights.ctr.toFixed(2)}%
                     </span>
                   ) : '-'}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-gray-600">{insights ? formatCurrency(insights.cpc) : '-'}</td>
-                <td className="whitespace-nowrap px-4 py-3">
+                <td className="whitespace-nowrap px-3 py-2.5 text-gray-600">{insights ? formatCurrency(insights.cpc) : '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5">
                   {insights ? (
                     <span className={`font-medium ${insights.frequency >= 3.5 ? 'text-red-600' : insights.frequency >= 2.5 ? 'text-yellow-600' : 'text-gray-900'}`}>
                       {insights.frequency.toFixed(1)}x
                     </span>
                   ) : '-'}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-gray-600">{insights?.conversions ?? '-'}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-pink-600 font-medium">{insights?.likes || 0}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-amber-600 font-medium">{insights?.comments || 0}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-green-600 font-medium">{insights?.shares || 0}</td>
-                <td className="px-4 py-3">
+                <td className="whitespace-nowrap px-3 py-2.5">
+                  {insights && isVideo && insights.hook_rate > 0 ? (
+                    <span className={`font-medium ${insights.hook_rate >= 15 ? 'text-green-600' : insights.hook_rate >= 8 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {insights.hook_rate.toFixed(1)}%
+                    </span>
+                  ) : <span className="text-gray-300">-</span>}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2.5">
+                  {insights && isVideo && insights.hold_rate > 0 ? (
+                    <span className={`font-medium ${insights.hold_rate >= 25 ? 'text-green-600' : insights.hold_rate >= 12 ? 'text-yellow-600' : 'text-red-600'}`}>
+                      {insights.hold_rate.toFixed(1)}%
+                    </span>
+                  ) : <span className="text-gray-300">-</span>}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-gray-600">{insights?.conversions ?? '-'}</td>
+                <td className="whitespace-nowrap px-3 py-2.5 text-pink-600 font-medium">{insights?.likes || 0}</td>
+                <td className="px-3 py-2.5">
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold ${fatigueColors[fl] || 'bg-gray-100 text-gray-700'}`}>
                     {fatigueLabels[fl] || '-'} ({c.fatigue_score})
                   </span>
