@@ -108,13 +108,6 @@ export async function getAdLevelInsights(
     'actions',
     'cost_per_action_type',
     'action_values',
-    'video_play_actions',
-    'video_thru_play_actions',
-    'video_p25_watched_actions',
-    'video_p50_watched_actions',
-    'video_p75_watched_actions',
-    'video_p95_watched_actions',
-    'video_avg_time_watched_actions',
   ].join(','));
   url.searchParams.set('level', 'ad');
   url.searchParams.set('limit', '500');
@@ -160,15 +153,11 @@ export async function getAdLevelInsights(
 
     const spend = parseFloat(data.spend || 0);
 
-    // Engagement metrics from actions
+    // Engagement & video metrics from actions array
     const getActionVal = (type: string) => {
       if (!data.actions) return 0;
       const found = data.actions.find((a: any) => a.action_type === type);
       return found ? parseInt(found.value || 0) : 0;
-    };
-    const getVideoVal = (arr: any[] | undefined) => {
-      if (!arr || arr.length === 0) return 0;
-      return parseInt(arr[0]?.value || 0);
     };
 
     return {
@@ -191,20 +180,20 @@ export async function getAdLevelInsights(
       roas: spend > 0 && totalConversionValue > 0 ? totalConversionValue / spend : null,
       date_start: data.date_start,
       date_stop: data.date_stop,
-      // Engagement
+      // Engagement (from actions)
       likes: getActionVal('post_reaction'),
       comments: getActionVal('comment'),
       shares: getActionVal('post'),
       saves: getActionVal('onsite_conversion.post_save'),
       link_clicks: getActionVal('link_click'),
-      // Video retention
-      video_plays: getVideoVal(data.video_play_actions),
-      video_thru_plays: getVideoVal(data.video_thru_play_actions),
-      video_p25: getVideoVal(data.video_p25_watched_actions),
-      video_p50: getVideoVal(data.video_p50_watched_actions),
-      video_p75: getVideoVal(data.video_p75_watched_actions),
-      video_p95: getVideoVal(data.video_p95_watched_actions),
-      video_avg_time: parseFloat(data.video_avg_time_watched_actions?.[0]?.value || 0),
+      // Video retention (from actions)
+      video_plays: getActionVal('video_view'),
+      video_thru_plays: getActionVal('video_view'), // thru_play = completed views
+      video_p25: getActionVal('video_p25_watched'),
+      video_p50: getActionVal('video_p50_watched'),
+      video_p75: getActionVal('video_p75_watched'),
+      video_p95: getActionVal('video_p95_watched'),
+      video_avg_time: 0, // not available as separate field in v22.0+
     };
   });
 }
