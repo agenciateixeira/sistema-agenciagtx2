@@ -48,7 +48,7 @@ export function ConsolidatedModeImproved({ userId, datePreset }: ConsolidatedMod
       setAccountsBreakdown(results);
 
       // Consolidar dados
-      const consolidated = results.reduce(
+      const consolidated: any = results.reduce(
         (acc, current) => {
           const insights = current.insights;
           return {
