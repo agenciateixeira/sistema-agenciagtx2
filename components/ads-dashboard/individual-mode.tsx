@@ -4,7 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMetaAccount } from '@/contexts/meta-account-context';
 import toast from 'react-hot-toast';
 import { MetricCard } from './metric-card';
-import { DailyPerformanceChart } from './daily-performance-chart';
+import { AdvancedMultiAxisChart } from './advanced-multi-axis-chart';
+import { CohortAnalysis } from './cohort-analysis';
+import { MetricsSelector, AVAILABLE_METRICS } from './metrics-selector';
 import { CampaignsTable } from './campaigns-table';
 import { ROISummary } from './roi-summary';
 import { ROICampaignsTable } from './roi-campaigns-table';
@@ -37,6 +39,12 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
   const [roiData, setRoiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Estados para componentes avançados
+  const [selectedMetrics, setSelectedMetrics] = useState<string[]>(
+    AVAILABLE_METRICS.filter(m => m.defaultVisible).map(m => m.id)
+  );
+  const [cohortMetric, setCohortMetric] = useState<'spend' | 'conversions' | 'roas' | 'cpc' | 'ctr'>('spend');
 
   const fetchInsights = useCallback(async () => {
     console.log('[IndividualMode] 📡 fetchInsights iniciado');
@@ -171,7 +179,7 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
 
   return (
     <div className="space-y-6">
-      {/* Filtro de Período e Exportação */}
+      {/* Filtro de Período, Seletor de Métricas e Exportação */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <label className="text-sm font-medium text-gray-700">Período:</label>
@@ -198,6 +206,10 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
               {new Date(accountInsights.date_stop).toLocaleDateString('pt-BR')}
             </div>
           )}
+          <MetricsSelector
+            selectedMetrics={selectedMetrics}
+            onMetricsChange={setSelectedMetrics}
+          />
           <ExportButton
             accountInsights={accountInsights}
             campaignsInsights={campaignsInsights}
@@ -323,13 +335,42 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
         </div>
       )}
 
-      {/* Gráfico de Performance Diária */}
+      {/* Gráfico Multi-Eixo Avançado */}
       {dailyInsights.length > 0 && (
         <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
           <h3 className="mb-4 text-lg font-semibold text-gray-900">
-            Performance Diária (Últimos 30 dias)
+            📈 Performance no Tempo - Análise Multi-Métrica
           </h3>
-          <DailyPerformanceChart data={dailyInsights} />
+          <AdvancedMultiAxisChart
+            data={dailyInsights}
+            selectedMetrics={selectedMetrics}
+          />
+        </div>
+      )}
+
+      {/* Análise de Cohort */}
+      {dailyInsights.length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">
+              📊 Análise de Cohort Estatística
+            </h3>
+            <select
+              value={cohortMetric}
+              onChange={(e) => setCohortMetric(e.target.value as any)}
+              className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="spend">Gasto</option>
+              <option value="conversions">Conversões</option>
+              <option value="roas">ROAS</option>
+              <option value="cpc">CPC</option>
+              <option value="ctr">CTR</option>
+            </select>
+          </div>
+          <CohortAnalysis
+            data={dailyInsights}
+            metric={cohortMetric}
+          />
         </div>
       )}
 
