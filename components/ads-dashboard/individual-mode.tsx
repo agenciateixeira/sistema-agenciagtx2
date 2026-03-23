@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useMetaAccount } from '@/contexts/meta-account-context';
 import toast from 'react-hot-toast';
 import { MetricCard } from './metric-card';
@@ -38,17 +38,7 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    console.log('[IndividualMode] 🔄 useEffect triggered - selectedAccount:', selectedAccount?.name);
-    if (selectedAccount) {
-      console.log('[IndividualMode] ✅ Chamando fetchInsights');
-      fetchInsights();
-    } else {
-      console.log('[IndividualMode] ⚠️ selectedAccount é null, não vai buscar insights');
-    }
-  }, [datePreset, selectedAccount]);
-
-  const fetchInsights = async () => {
+  const fetchInsights = useCallback(async () => {
     console.log('[IndividualMode] 📡 fetchInsights iniciado');
     if (!selectedAccount) {
       console.log('[IndividualMode] ❌ selectedAccount é null, abortando');
@@ -122,7 +112,17 @@ export function IndividualMode({ userId, datePreset, onDatePresetChange }: Indiv
       console.log('[IndividualMode] 🏁 setLoading(false)');
       setLoading(false);
     }
-  };
+  }, [selectedAccount, userId, datePreset]);
+
+  useEffect(() => {
+    console.log('[IndividualMode] 🔄 useEffect triggered - selectedAccount:', selectedAccount?.name);
+    if (selectedAccount) {
+      console.log('[IndividualMode] ✅ Chamando fetchInsights');
+      fetchInsights();
+    } else {
+      console.log('[IndividualMode] ⚠️ selectedAccount é null, não vai buscar insights');
+    }
+  }, [selectedAccount, fetchInsights]);
 
   if (loading) {
     return (

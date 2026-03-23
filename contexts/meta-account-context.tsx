@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -113,7 +113,7 @@ export function MetaAccountProvider({
   }, [userId]);
 
   // Trocar conta
-  const switchAccount = async (accountId: string) => {
+  const switchAccount = useCallback(async (accountId: string) => {
     const toastId = toast.loading('Trocando conta...');
 
     try {
@@ -154,23 +154,25 @@ export function MetaAccountProvider({
       console.error('Error switching account:', error);
       toast.error(error.message || 'Erro ao trocar conta', { id: toastId });
     }
-  };
+  }, [accounts, router]);
 
   // Atualizar modo de visualização
-  const handleSetViewMode = (mode: 'single' | 'compare' | 'consolidated') => {
+  const handleSetViewMode = useCallback((mode: 'single' | 'compare' | 'consolidated') => {
     setViewMode(mode);
     localStorage.setItem('meta_view_mode', mode);
-  };
+  }, []);
 
   // Atualizar contas para comparar
-  const handleSetCompareAccounts = (accountIds: string[]) => {
+  const handleSetCompareAccounts = useCallback((accountIds: string[]) => {
     setCompareAccounts(accountIds);
     localStorage.setItem('meta_compare_accounts', JSON.stringify(accountIds));
-  };
+  }, []);
 
   useEffect(() => {
     loadAccounts();
+  }, [loadAccounts]);
 
+  useEffect(() => {
     // Listener para sincronizar entre abas
     if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
       const channel = new BroadcastChannel('meta_account_switch');
@@ -187,20 +189,32 @@ export function MetaAccountProvider({
 
       return () => channel.close();
     }
-  }, [loadAccounts, router, accounts]);
+  }, [accounts, router]);
+
+  const contextValue = useMemo(() => ({
+    accounts,
+    selectedAccount,
+    isLoading,
+    switchAccount,
+    refreshAccounts: loadAccounts,
+    viewMode,
+    setViewMode: handleSetViewMode,
+    compareAccounts,
+    setCompareAccounts: handleSetCompareAccounts,
+  }), [
+    accounts,
+    selectedAccount,
+    isLoading,
+    switchAccount,
+    loadAccounts,
+    viewMode,
+    handleSetViewMode,
+    compareAccounts,
+    handleSetCompareAccounts,
+  ]);
 
   return (
-    <MetaAccountContext.Provider value={{
-      accounts,
-      selectedAccount,
-      isLoading,
-      switchAccount,
-      refreshAccounts: loadAccounts,
-      viewMode,
-      setViewMode: handleSetViewMode,
-      compareAccounts,
-      setCompareAccounts: handleSetCompareAccounts,
-    }}>
+    <MetaAccountContext.Provider value={contextValue}>
       {children}
     </MetaAccountContext.Provider>
   );
