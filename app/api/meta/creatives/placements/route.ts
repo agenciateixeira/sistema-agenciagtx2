@@ -1,7 +1,8 @@
 /**
- * GET /api/meta/creatives/placements?user_id=...&ad_account_id=...&ad_id=...&date_preset=last_30d
+ * GET /api/meta/creatives/placements
  *
- * Busca breakdown de performance por posicionamento (Feed, Stories, Reels, etc.)
+ * Busca breakdown de performance por posicionamento
+ * (Feed, Stories, Reels, Audience Network, etc.)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,7 +21,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('user_id');
-    const adAccountId = searchParams.get('ad_account_id');
     const adId = searchParams.get('ad_id');
     const datePreset = searchParams.get('date_preset') || 'last_30d';
 
@@ -35,25 +35,51 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (connectionError || !metaConnection) {
-      return NextResponse.json({ error: 'Meta connection not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Meta connection not found' },
+        { status: 404 }
+      );
     }
 
     const tokenExpired = new Date(metaConnection.token_expires_at) < new Date();
     if (tokenExpired || metaConnection.status !== 'connected') {
-      return NextResponse.json({ error: 'Token expired' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Token expired or connection not active' },
+        { status: 401 }
+      );
     }
 
-    const accountId = adAccountId || metaConnection.primary_ad_account_id;
-    if (!accountId && !adId) {
-      return NextResponse.json({ error: 'No ad account configured' }, { status: 400 });
+    if (!metaConnection.primary_ad_account_id) {
+      return NextResponse.json(
+        { error: 'No ad account configured' },
+        { status: 400 }
+      );
     }
 
     const accessToken = decrypt(metaConnection.access_token_encrypted);
-    const data = await getPlacementBreakdown(accountId, accessToken, datePreset, adId || undefined);
 
-    return NextResponse.json({ success: true, data });
+    const data = await getPlacementBreakdown(
+      metaConnection.primary_ad_account_id,
+      accessToken,
+      datePreset,
+      adId || undefined
+    );
+
+    return NextResponse.json({
+      success: true,
+      data,
+      ad_account_id: metaConnection.primary_ad_account_id,
+    });
   } catch (error: any) {
-    console.error('Erro ao buscar placement breakdown:', error);
+    console.error('Erro ao buscar placements:', error);
+
+    if (error.message?.includes('OAuthException') || error.message?.includes('expired')) {
+      return NextResponse.json(
+        { error: 'Meta API authentication failed. Please reconnect your account.' },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
       { error: error.message || 'Failed to fetch placement breakdown' },
       { status: 500 }

@@ -1,8 +1,8 @@
 /**
- * GET /api/meta/creatives/daily?user_id=...&ad_id=...&date_preset=last_30d
+ * GET /api/meta/creatives/daily
  *
  * Busca performance diária de um anúncio específico
- * Para gráficos de timeline, curva de fadiga e análise semanal
+ * Usado para gráficos de fadiga e tendência
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,84 +24,57 @@ export async function GET(request: NextRequest) {
     const adId = searchParams.get('ad_id');
     const datePreset = searchParams.get('date_preset') || 'last_30d';
 
-    if (!userId || !adId) {
-      return NextResponse.json(
-        { error: 'user_id and ad_id are required' },
-        { status: 400 }
-      );
+    if (!userId) {
+      return NextResponse.json({ error: 'user_id is required' }, { status: 400 });
+    }
+
+    if (!adId) {
+      return NextResponse.json({ error: 'ad_id is required' }, { status: 400 });
     }
 
     const { data: metaConnection, error: connectionError } = await supabase
       .from('meta_connections')
-      .select('access_token_encrypted, token_expires_at, status')
+      .select('*')
       .eq('user_id', userId)
       .single();
 
     if (connectionError || !metaConnection) {
-      return NextResponse.json({ error: 'Meta connection not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Meta connection not found' },
+        { status: 404 }
+      );
     }
 
     const tokenExpired = new Date(metaConnection.token_expires_at) < new Date();
     if (tokenExpired || metaConnection.status !== 'connected') {
-      return NextResponse.json({ error: 'Token expired' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Token expired or connection not active' },
+        { status: 401 }
+      );
     }
 
     const accessToken = decrypt(metaConnection.access_token_encrypted);
+
     const data = await getAdDailyPerformance(adId, accessToken, datePreset);
 
-    // Calculate weekly phases
-    const weeklyPhases = calculateWeeklyPhases(data);
-
-    return NextResponse.json({ success: true, data, weekly_phases: weeklyPhases });
+    return NextResponse.json({
+      success: true,
+      data,
+      ad_id: adId,
+    });
   } catch (error: any) {
-    console.error('Erro ao buscar performance diária:', error);
+    console.error('Erro ao buscar daily performance:', error);
+
+    if (error.message?.includes('OAuthException') || error.message?.includes('expired')) {
+      return NextResponse.json(
+        { error: 'Meta API authentication failed. Please reconnect your account.' },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json(
       { error: error.message || 'Failed to fetch daily performance' },
       { status: 500 }
     );
   }
-}
-
-function calculateWeeklyPhases(data: any[]) {
-  if (data.length === 0) return [];
-
-  const weeks: Map<number, any[]> = new Map();
-  const startDate = new Date(data[0].date);
-
-  for (const day of data) {
-    const dayDate = new Date(day.date);
-    const weekNum = Math.floor((dayDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
-    if (!weeks.has(weekNum)) weeks.set(weekNum, []);
-    weeks.get(weekNum)!.push(day);
-  }
-
-  return Array.from(weeks.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([weekNum, days]) => {
-      const totalSpend = days.reduce((s, d) => s + d.spend, 0);
-      const totalImpressions = days.reduce((s, d) => s + d.impressions, 0);
-      const totalClicks = days.reduce((s, d) => s + d.clicks, 0);
-      const totalConversions = days.reduce((s, d) => s + d.conversions, 0);
-      const totalReach = days.reduce((s, d) => s + d.reach, 0);
-      const avgCtr = days.reduce((s, d) => s + d.ctr, 0) / days.length;
-      const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
-      const avgFrequency = totalReach > 0 ? totalImpressions / totalReach : 0;
-      const costPerResult = totalConversions > 0 ? totalSpend / totalConversions : 0;
-
-      return {
-        week: weekNum + 1,
-        label: `Semana ${weekNum + 1}`,
-        date_start: days[0].date,
-        date_end: days[days.length - 1].date,
-        days: days.length,
-        spend: totalSpend,
-        impressions: totalImpressions,
-        clicks: totalClicks,
-        conversions: totalConversions,
-        ctr: avgCtr,
-        cpc: avgCpc,
-        frequency: avgFrequency,
-        cost_per_result: costPerResult,
-      };
-    });
 }
