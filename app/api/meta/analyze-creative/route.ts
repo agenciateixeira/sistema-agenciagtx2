@@ -272,9 +272,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'user_id required' }, { status: 400 });
     }
 
-    const supabase = createRouteHandlerClient({ cookies });
+    // Usar Service Role Key para bypassar RLS
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('creative_analysis')
       .select('*')
       .eq('user_id', user_id)
