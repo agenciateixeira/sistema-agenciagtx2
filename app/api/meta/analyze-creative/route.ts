@@ -90,7 +90,7 @@ interface AnalyzeCreativeRequest {
   ad_account_id: string;
   creative_url: string;
   creative_type: 'image' | 'video' | 'carousel';
-  model?: 'gemini-1.5-pro' | 'gemini-1.5-flash'; // Modelos Gemini
+  model?: 'gemini-2.5-pro' | 'gemini-2.5-flash' | 'gemini-pro-latest'; // Modelos Gemini
 }
 
 export async function POST(request: Request) {
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
   try {
     const body: AnalyzeCreativeRequest = await request.json();
-    const { user_id, ad_id, ad_account_id, creative_url, creative_type, model = 'gemini-1.5-pro' } = body;
+    const { user_id, ad_id, ad_account_id, creative_url, creative_type, model = 'gemini-2.5-flash' } = body;
 
     console.log('[Analyze Creative] 🎨 Iniciando análise:', { ad_id, creative_type, model });
 
