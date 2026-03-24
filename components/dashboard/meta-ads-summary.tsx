@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ExternalLink, TrendingUp, DollarSign, MousePointerClick, Loader2 } from 'lucide-react';
+import { useMetaAccount } from '@/contexts/meta-account-context';
 
 interface MetaAdsSummaryProps {
   userId: string;
@@ -10,18 +11,14 @@ interface MetaAdsSummaryProps {
 }
 
 export function MetaAdsSummary({ userId, metaConnection }: MetaAdsSummaryProps) {
+  const { selectedAccount } = useMetaAccount();
   const [insights, setInsights] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (metaConnection && metaConnection.status === 'connected') {
-      fetchQuickInsights();
-    } else {
-      setLoading(false);
-    }
-  }, []);
+  const fetchQuickInsights = useCallback(async () => {
+    if (!selectedAccount) return;
 
-  const fetchQuickInsights = async () => {
+    setLoading(true);
     try {
       const response = await fetch(
         `/api/meta/insights?user_id=${userId}&type=account&date_preset=last_7d`
@@ -36,7 +33,15 @@ export function MetaAdsSummary({ userId, metaConnection }: MetaAdsSummaryProps) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, selectedAccount]);
+
+  useEffect(() => {
+    if (metaConnection && metaConnection.status === 'connected' && selectedAccount) {
+      fetchQuickInsights();
+    } else {
+      setLoading(false);
+    }
+  }, [metaConnection, selectedAccount, fetchQuickInsights]);
 
   // Se não tiver conexão
   if (!metaConnection) {

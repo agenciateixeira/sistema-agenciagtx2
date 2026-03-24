@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
+import { useMetaAccount } from '@/contexts/meta-account-context';
 import { CreativeCard } from './creative-card';
 import { CreativesTable } from './creatives-table';
 import { FatigueSummary } from './fatigue-summary';
@@ -48,6 +49,7 @@ export function CreativesDashboardClient({
   primaryAdAccountId,
   adAccounts = [],
 }: CreativesDashboardClientProps) {
+  const { selectedAccount } = useMetaAccount();
   const [selectedAccountId, setSelectedAccountId] = useState(primaryAdAccountId);
   const [showAccountSelector, setShowAccountSelector] = useState(false);
   const [datePreset, setDatePreset] = useState<'last_7d' | 'last_30d' | 'this_month' | 'last_month'>('last_30d');
@@ -98,6 +100,17 @@ export function CreativesDashboardClient({
   useEffect(() => {
     fetchCreatives();
   }, [fetchCreatives]);
+
+  // Sincronizar com contexto global quando conta muda
+  useEffect(() => {
+    if (selectedAccount && selectedAccount.account_id !== selectedAccountId) {
+      console.log('[CreativesDashboard] 🔄 Conta global mudou, sincronizando:', selectedAccount.account_id);
+      setSelectedAccountId(selectedAccount.account_id);
+      setSelectedCreative(null);
+      setDailyData([]);
+      setWeeklyPhases([]);
+    }
+  }, [selectedAccount]);
 
   // Fetch daily performance for selected creative
   const fetchDailyPerformance = async (adId: string) => {
