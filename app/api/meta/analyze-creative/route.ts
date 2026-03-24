@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Pode levar tempo para analisar vídeos
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 // Prompt estruturado para extração de atributos
 const ANALYSIS_PROMPT = `Você é um especialista em análise de criativos de Meta Ads. Analise esta imagem/vídeo e extraia TODOS os atributos visuais e estratégicos que podem impactar a performance de conversão.
@@ -93,7 +91,7 @@ interface AnalyzeCreativeRequest {
   ad_account_id: string;
   creative_url: string;
   creative_type: 'image' | 'video' | 'carousel';
-  model?: 'gpt-4o' | 'gpt-4o-mini'; // Permite escolher modelo
+  model?: 'gemini-1.5-pro' | 'gemini-1.5-flash'; // Modelos Gemini
 }
 
 export async function POST(request: Request) {
@@ -101,7 +99,7 @@ export async function POST(request: Request) {
 
   try {
     const body: AnalyzeCreativeRequest = await request.json();
-    const { user_id, ad_id, ad_account_id, creative_url, creative_type, model = 'gpt-4o' } = body;
+    const { user_id, ad_id, ad_account_id, creative_url, creative_type, model = 'gemini-1.5-pro' } = body;
 
     console.log('[Analyze Creative] 🎨 Iniciando análise:', { ad_id, creative_type, model });
 
@@ -155,39 +153,44 @@ export async function POST(request: Request) {
 
     console.log('[Analyze Creative] 🤖 Chamando', model);
 
-    // Chamar GPT-4o Vision
-    const completion = await openai.chat.completions.create({
+    // Fetch da imagem para converter em base64 (necessário para Gemini)
+    const imageResponse = await fetch(creative_url);
+    const imageBuffer = await imageResponse.arrayBuffer();
+    const base64Image = Buffer.from(imageBuffer).toString('base64');
+    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg';
+
+    // Chamar Gemini Vision
+    const geminiModel = genAI.getGenerativeModel({
       model: model,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: ANALYSIS_PROMPT },
-            {
-              type: 'image_url',
-              image_url: {
-                url: creative_url,
-                detail: 'high', // high para análise detalhada
-              },
-            },
-          ],
-        },
-      ],
-      max_tokens: 2000,
-      temperature: 0.3, // Baixa para respostas mais consistentes
-      response_format: { type: 'json_object' }, // Força resposta JSON
+      generationConfig: {
+        temperature: 0.3,
+        maxOutputTokens: 2000,
+        responseMimeType: 'application/json', // Força resposta JSON
+      }
     });
 
-    const rawResponse = completion.choices[0].message.content || '{}';
+    const result = await geminiModel.generateContent([
+      ANALYSIS_PROMPT,
+      {
+        inlineData: {
+          data: base64Image,
+          mimeType: mimeType,
+        },
+      },
+    ]);
+
+    const response = await result.response;
+    const rawResponse = response.text();
     console.log('[Analyze Creative] 📊 Resposta recebida:', rawResponse.substring(0, 200));
 
     // Parse da resposta
     const analysis = JSON.parse(rawResponse);
 
-    // Calcular custo (GPT-4o pricing: $5/1M input tokens, $15/1M output tokens)
-    const inputTokens = completion.usage?.prompt_tokens || 0;
-    const outputTokens = completion.usage?.completion_tokens || 0;
-    const costUsd = (inputTokens * 0.000005) + (outputTokens * 0.000015);
+    // Calcular custo (Gemini 1.5 Pro pricing: $0.00125/1K input chars, $0.005/1K output chars)
+    // Aproximação: 1 token ≈ 4 chars
+    const inputTokens = Math.ceil((ANALYSIS_PROMPT.length + base64Image.length / 4) / 4);
+    const outputTokens = Math.ceil(rawResponse.length / 4);
+    const costUsd = (inputTokens * 0.00000125) + (outputTokens * 0.000005);
 
     const processingTimeMs = Date.now() - startTime;
 
@@ -209,7 +212,7 @@ export async function POST(request: Request) {
         analysis_status: 'completed',
         processing_time_ms: processingTimeMs,
         cost_usd: costUsd,
-        model_version: completion.model,
+        model_version: model,
       })
       .eq('id', analysisRecord.id)
       .select()

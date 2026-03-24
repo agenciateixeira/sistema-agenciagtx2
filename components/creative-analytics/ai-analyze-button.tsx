@@ -41,7 +41,7 @@ export function AIAnalyzeButton({
           ad_account_id: adAccountId,
           creative_url: creativeUrl,
           creative_type: creativeType,
-          model: 'gpt-4o',
+          model: 'gemini-1.5-pro',
         }),
       });
 
