@@ -204,7 +204,7 @@ export async function POST(request: Request) {
     const processingTimeMs = Date.now() - startTime;
 
     // Atualizar registro com análise completa
-    const { data: updatedAnalysis, error: updateError } = await supabase
+    const { data: updatedAnalysis, error: updateError } = await supabaseAdmin
       .from('creative_analysis')
       .update({
         tangible_attributes: analysis.tangible_attributes || {},
