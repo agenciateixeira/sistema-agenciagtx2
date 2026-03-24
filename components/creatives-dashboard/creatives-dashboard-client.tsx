@@ -508,7 +508,11 @@ export function CreativesDashboardClient({
                       : 'hover:ring-1 hover:ring-gray-300'
                   }`}
                 >
-                  <CreativeCard creative={creative} />
+                  <CreativeCard
+                    creative={creative}
+                    userId={userId}
+                    adAccountId={selectedAccountId}
+                  />
                 </div>
               ))}
             </div>

@@ -1,9 +1,14 @@
 'use client';
 
+import { useState } from 'react';
 import { Image as ImageIcon, Video, Layers } from 'lucide-react';
+import { AIAnalyzeButton } from '../creative-analytics/ai-analyze-button';
+import { AnalysisInsightsPanel } from '../creative-analytics/analysis-insights-panel';
 
 interface CreativeCardProps {
   creative: any;
+  userId?: string;
+  adAccountId?: string;
 }
 
 const fatigueColors = {
@@ -44,12 +49,20 @@ function TypeIcon({ type }: { type: string }) {
   }
 }
 
-export function CreativeCard({ creative }: CreativeCardProps) {
+export function CreativeCard({ creative, userId, adAccountId }: CreativeCardProps) {
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [showAnalysisPanel, setShowAnalysisPanel] = useState(false);
+
   const fatigue = fatigueColors[creative.fatigue_level as keyof typeof fatigueColors] || fatigueColors.low;
   const qualityColor = qualityColors[creative.quality_level] || qualityColors.poor;
   const insights = creative.insights;
   const thumbnailUrl = creative.thumbnail_url || creative.image_url || creative.video_thumbnail_url;
   const isVideo = creative.creative_type === 'video';
+
+  const handleAnalysisComplete = (analysisData: any) => {
+    setAnalysis(analysisData);
+    setShowAnalysisPanel(true);
+  };
 
   return (
     <div className="group overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md">
@@ -199,7 +212,31 @@ export function CreativeCard({ creative }: CreativeCardProps) {
             />
           </div>
         </div>
+
+        {/* AI Analysis Button */}
+        {userId && adAccountId && thumbnailUrl && (
+          <div className="mt-3 border-t border-gray-100 pt-3">
+            <AIAnalyzeButton
+              userId={userId}
+              adId={creative.ad_id}
+              adAccountId={adAccountId}
+              creativeUrl={thumbnailUrl}
+              creativeType={creative.creative_type}
+              onAnalysisComplete={handleAnalysisComplete}
+              variant="compact"
+              className="w-full justify-center"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Analysis Insights Panel */}
+      {showAnalysisPanel && analysis && (
+        <AnalysisInsightsPanel
+          analysis={analysis}
+          onClose={() => setShowAnalysisPanel(false)}
+        />
+      )}
     </div>
   );
 }
