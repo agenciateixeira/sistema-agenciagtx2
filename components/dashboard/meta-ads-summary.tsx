@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { ExternalLink, TrendingUp, DollarSign, MousePointerClick, Loader2 } from 'lucide-react';
-import { useMetaAccount } from '@/contexts/meta-account-context';
 
 interface MetaAdsSummaryProps {
   userId: string;
@@ -11,12 +10,14 @@ interface MetaAdsSummaryProps {
 }
 
 export function MetaAdsSummary({ userId, metaConnection }: MetaAdsSummaryProps) {
-  const { selectedAccount } = useMetaAccount();
   const [insights, setInsights] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchQuickInsights = useCallback(async () => {
-    if (!selectedAccount) return;
+    if (!metaConnection || metaConnection.status !== 'connected') {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -33,15 +34,11 @@ export function MetaAdsSummary({ userId, metaConnection }: MetaAdsSummaryProps) 
     } finally {
       setLoading(false);
     }
-  }, [userId, selectedAccount]);
+  }, [userId, metaConnection]);
 
   useEffect(() => {
-    if (metaConnection && metaConnection.status === 'connected' && selectedAccount) {
-      fetchQuickInsights();
-    } else {
-      setLoading(false);
-    }
-  }, [metaConnection, selectedAccount, fetchQuickInsights]);
+    fetchQuickInsights();
+  }, [fetchQuickInsights]);
 
   // Se não tiver conexão
   if (!metaConnection) {
