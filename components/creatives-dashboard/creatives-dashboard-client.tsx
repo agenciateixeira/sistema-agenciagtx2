@@ -6,16 +6,11 @@ import { CreativeCard } from './creative-card';
 import { CreativesTable } from './creatives-table';
 import { FatigueSummary } from './fatigue-summary';
 import { CreativeFilters } from './creative-filters';
-import { VideoRetentionFunnel } from './video-retention-funnel';
-import { DailyPerformanceChart } from './daily-performance-chart';
 import { EngagementSummary } from './engagement-summary';
-import { HookHoldRates } from './hook-hold-rates';
-import { QualityScoreBadge } from './quality-score-badge';
-import { FatigueCurveChart } from './fatigue-curve-chart';
-import { WeeklyPhaseAnalysis } from './weekly-phase-analysis';
-import { PlacementBreakdown } from './placement-breakdown';
 import { ABComparison } from './ab-comparison';
 import { CTAAnalysis } from './cta-analysis';
+import { PlacementBreakdown } from './placement-breakdown';
+import { CreativeDetailModal } from './creative-detail-modal';
 import {
   Loader2,
   AlertCircle,
@@ -62,9 +57,6 @@ export function CreativesDashboardClient({
   const [filterFatigue, setFilterFatigue] = useState<'all' | 'low' | 'medium' | 'high' | 'critical'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCreative, setSelectedCreative] = useState<any | null>(null);
-  const [dailyData, setDailyData] = useState<any[]>([]);
-  const [weeklyPhases, setWeeklyPhases] = useState<any[]>([]);
-  const [loadingDaily, setLoadingDaily] = useState(false);
   const [showABComparison, setShowABComparison] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'placements' | 'cta'>('overview');
 
@@ -99,41 +91,14 @@ export function CreativesDashboardClient({
     fetchCreatives();
   }, [fetchCreatives]);
 
-  // Fetch daily performance for selected creative
-  const fetchDailyPerformance = async (adId: string) => {
-    setLoadingDaily(true);
-    try {
-      const res = await fetch(
-        `/api/meta/creatives/daily?user_id=${userId}&ad_id=${adId}&date_preset=${datePreset}`
-      );
-      const json = await res.json();
-      setDailyData(json.data || []);
-      setWeeklyPhases(json.weekly_phases || []);
-    } catch {
-      setDailyData([]);
-      setWeeklyPhases([]);
-    } finally {
-      setLoadingDaily(false);
-    }
-  };
-
   const handleSelectCreative = (creative: any) => {
-    if (selectedCreative?.ad_id === creative.ad_id) {
-      setSelectedCreative(null);
-      setDailyData([]);
-      setWeeklyPhases([]);
-    } else {
-      setSelectedCreative(creative);
-      fetchDailyPerformance(creative.ad_id);
-    }
+    setSelectedCreative(creative);
   };
 
   const handleSwitchAccount = (accountId: string) => {
     setSelectedAccountId(accountId);
     setShowAccountSelector(false);
     setSelectedCreative(null);
-    setDailyData([]);
-    setWeeklyPhases([]);
   };
 
   // Filtrar e ordenar
@@ -507,108 +472,18 @@ export function CreativesDashboardClient({
             <CreativesTable creatives={filtered} onSelectCreative={handleSelectCreative} selectedAdId={selectedCreative?.ad_id} />
           )}
 
-          {/* Detail Panel for Selected Creative */}
-          {selectedCreative && (
-            <div className="space-y-6 rounded-xl border-2 border-green-200 bg-green-50/30 p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900">
-                      {selectedCreative.ad_name}
-                    </h3>
-                    <p className="text-sm text-gray-500">{selectedCreative.insights?.campaign_name}</p>
-                  </div>
-                  <QualityScoreBadge
-                    score={selectedCreative.quality_score || 0}
-                    level={selectedCreative.quality_level || 'poor'}
-                    size="md"
-                  />
-                </div>
-                <button
-                  onClick={() => { setSelectedCreative(null); setDailyData([]); setWeeklyPhases([]); }}
-                  className="rounded-lg border border-gray-200 bg-white p-2 text-gray-400 hover:text-gray-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-
-              {/* Top row: Quality Score + Hook/Hold + Retention + Engagement */}
-              <div className="grid gap-6 lg:grid-cols-3">
-                {/* Hook & Hold Rates */}
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                    Hook Rate & Hold Rate
-                  </h4>
-                  <HookHoldRates insights={selectedCreative.insights} />
-                </div>
-
-                {/* Video Retention Funnel */}
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                    Funil de Retenção de Vídeo
-                  </h4>
-                  <VideoRetentionFunnel insights={selectedCreative.insights} />
-                </div>
-
-                {/* Engagement Breakdown */}
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                    Engajamento do Criativo
-                  </h4>
-                  <CreativeEngagementDetail insights={selectedCreative.insights} />
-                </div>
-              </div>
-
-              {/* Fatigue Curve */}
-              {!loadingDaily && dailyData.length >= 3 && (
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                    Curva de Fadiga (Evolução ao Longo do Tempo)
-                  </h4>
-                  <FatigueCurveChart data={dailyData} />
-                </div>
-              )}
-
-              {/* Weekly Phase Analysis */}
-              {!loadingDaily && weeklyPhases.length >= 2 && (
-                <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                  <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                    Custo por Resultado por Fase (Semana a Semana)
-                  </h4>
-                  <WeeklyPhaseAnalysis phases={weeklyPhases} />
-                </div>
-              )}
-
-              {/* Placement Breakdown for this specific ad */}
-              <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                  Performance por Posicionamento
-                </h4>
-                <PlacementBreakdown
-                  userId={userId}
-                  adAccountId={selectedAccountId}
-                  datePreset={datePreset}
-                  adId={selectedCreative.ad_id}
-                />
-              </div>
-
-              {/* Daily Performance Chart */}
-              <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
-                <h4 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-500">
-                  Performance ao Longo do Tempo
-                </h4>
-                {loadingDaily ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-                    <span className="ml-3 text-sm text-gray-500">Carregando dados diários...</span>
-                  </div>
-                ) : (
-                  <DailyPerformanceChart data={dailyData} />
-                )}
-              </div>
-            </div>
-          )}
         </>
+      )}
+
+      {/* Modal for Selected Creative */}
+      {selectedCreative && (
+        <CreativeDetailModal
+          creative={selectedCreative}
+          userId={userId}
+          adAccountId={selectedAccountId}
+          datePreset={datePreset}
+          onClose={() => setSelectedCreative(null)}
+        />
       )}
     </div>
   );

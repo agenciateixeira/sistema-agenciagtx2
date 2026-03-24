@@ -88,9 +88,7 @@ export async function getAdAccountInsights(
       'frequency',
       'conversions',
       'conversion_values',
-      'messaging_conversation_started_7d',
-      'onsite_conversion.messaging_conversation_started_7d',
-      'actions',  // Para pegar todas as ações disponíveis
+      'actions',  // Para pegar todas as ações disponíveis incluindo messaging
       'action_values',  // Para pegar valores de ações
     ].join(','));
     url.searchParams.set('level', 'account');
