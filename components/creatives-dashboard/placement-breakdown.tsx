@@ -78,6 +78,13 @@ export function PlacementBreakdown({ userId, adAccountId, datePreset, adId }: Pl
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Validações de segurança
+    if (!userId || !adAccountId) {
+      setLoading(false);
+      setError('Dados insuficientes para carregar posicionamentos');
+      return;
+    }
+
     const fetchPlacements = async () => {
       setLoading(true);
       setError(null);

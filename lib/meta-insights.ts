@@ -25,6 +25,8 @@ export interface AdAccountInsights {
   conversions?: number;
   conversion_value?: number;
   roas?: number;
+  messaging_conversation_started_7d?: number;
+  onsite_conversion_messaging_conversation_started_7d?: number;
 }
 
 export interface CampaignInsights {
@@ -86,6 +88,10 @@ export async function getAdAccountInsights(
       'frequency',
       'conversions',
       'conversion_values',
+      'messaging_conversation_started_7d',
+      'onsite_conversion.messaging_conversation_started_7d',
+      'actions',  // Para pegar todas as ações disponíveis
+      'action_values',  // Para pegar valores de ações
     ].join(','));
     url.searchParams.set('level', 'account');
     url.searchParams.set('limit', '1');
@@ -132,6 +138,26 @@ export async function getAdAccountInsights(
       roas = totalConversionValue / parseFloat(data.spend);
     }
 
+    // Extrair métricas de mensagens iniciadas do array de actions
+    let messaging_conversation_started_7d = undefined;
+    let onsite_conversion_messaging_conversation_started_7d = undefined;
+
+    if (data.actions && Array.isArray(data.actions)) {
+      const messagingAction = data.actions.find((action: any) =>
+        action.action_type === 'messaging_conversation_started_7d'
+      );
+      if (messagingAction) {
+        messaging_conversation_started_7d = parseInt(messagingAction.value || 0);
+      }
+
+      const onsiteMessagingAction = data.actions.find((action: any) =>
+        action.action_type === 'onsite_conversion.messaging_conversation_started_7d'
+      );
+      if (onsiteMessagingAction) {
+        onsite_conversion_messaging_conversation_started_7d = parseInt(onsiteMessagingAction.value || 0);
+      }
+    }
+
     return {
       account_id: data.account_id,
       account_name: data.account_name,
@@ -150,6 +176,8 @@ export async function getAdAccountInsights(
         ? data.conversion_values.reduce((sum: number, item: any) => sum + parseFloat(item.value || 0), 0)
         : undefined,
       roas,
+      messaging_conversation_started_7d,
+      onsite_conversion_messaging_conversation_started_7d,
     };
   } catch (error: any) {
     console.error('❌ Erro ao buscar insights da conta:', error);
