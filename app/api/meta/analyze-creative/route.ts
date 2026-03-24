@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 export const dynamic = 'force-dynamic';
@@ -110,10 +109,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verificar se já existe análise recente (cache de 7 dias)
-    const supabase = createRouteHandlerClient({ cookies });
+    // Usar Service Role Key para bypassar RLS (operação do lado do servidor)
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
 
-    const { data: existingAnalysis } = await supabase
+    // Verificar se já existe análise recente (cache de 7 dias)
+    const { data: existingAnalysis } = await supabaseAdmin
       .from('creative_analysis')
       .select('*')
       .eq('ad_id', ad_id)
@@ -132,7 +141,7 @@ export async function POST(request: Request) {
     }
 
     // Criar registro de análise pendente
-    const { data: analysisRecord, error: insertError } = await supabase
+    const { data: analysisRecord, error: insertError } = await supabaseAdmin
       .from('creative_analysis')
       .insert({
         user_id,
